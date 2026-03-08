@@ -1,0 +1,22 @@
+{
+  "kok_ai": "Kok AI App",
+  "development_ready": "Project scaffold is ready for development",
+  "selected_tab": "Selected tab: {}",
+  "Skip": "Skip",
+  "Continue": "Continue",
+  "Get Started": "Get Started",
+  "Speak Fearlessly": "Speak Fearlessly",
+  "Micro-learning": "Micro-learning",
+  "See Your Growth": "See Your Growth",
+  "Home": "Home",
+  "Learn": "Learn",
+  "Practice": "Practice",
+  "AI": "AI",
+  "Profile": "Profile",
+  "Onboarding": "Onboarding",
+  "Reusable gradient intro components": "Reusable gradient intro components",
+  "Theme System": "Theme System",
+  "Centralized spacing, typography, colors": "Centralized spacing, typography, colors",
+  "State Management": "State Management",
+  "BLoC + GetIt architecture is wired": "BLoC + GetIt architecture is wired"
+}

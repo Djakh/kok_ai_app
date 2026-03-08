@@ -1,0 +1,22 @@
+{
+  "kok_ai": "Kok AI App",
+  "development_ready": "Базовая структура проекта готова к разработке",
+  "selected_tab": "Выбранная вкладка: {}",
+  "Skip": "Пропустить",
+  "Continue": "Продолжить",
+  "Get Started": "Начать",
+  "Speak Fearlessly": "Говорите без страха",
+  "Micro-learning": "Микрообучение",
+  "See Your Growth": "Следите за прогрессом",
+  "Home": "Главная",
+  "Learn": "Учить",
+  "Practice": "Практика",
+  "AI": "ИИ",
+  "Profile": "Профиль",
+  "Onboarding": "Онбординг",
+  "Reusable gradient intro components": "Переиспользуемые вводные компоненты",
+  "Theme System": "Система тем",
+  "Centralized spacing, typography, colors": "Централизованные отступы, типографика и цвета",
+  "State Management": "Управление состоянием",
+  "BLoC + GetIt architecture is wired": "Архитектура BLoC + GetIt подключена"
+}

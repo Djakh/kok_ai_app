@@ -1,0 +1,22 @@
+{
+  "kok_ai": "Kok AI App",
+  "development_ready": "Loyiha skeleti dasturlash uchun tayyor",
+  "selected_tab": "Tanlangan bo'lim: {}",
+  "Skip": "O'tkazib yuborish",
+  "Continue": "Davom etish",
+  "Get Started": "Boshlash",
+  "Speak Fearlessly": "Qo'rqmasdan gapiring",
+  "Micro-learning": "Mikro o'rganish",
+  "See Your Growth": "O'sishingizni kuzating",
+  "Home": "Bosh sahifa",
+  "Learn": "O'rganish",
+  "Practice": "Amaliyot",
+  "AI": "AI",
+  "Profile": "Profil",
+  "Onboarding": "Tanishtirish",
+  "Reusable gradient intro components": "Qayta ishlatiladigan kirish komponentlari",
+  "Theme System": "Tema tizimi",
+  "Centralized spacing, typography, colors": "Markazlashgan spacing, tipografiya va ranglar",
+  "State Management": "State boshqaruvi",
+  "BLoC + GetIt architecture is wired": "BLoC + GetIt arxitekturasi ulandi"
+}
