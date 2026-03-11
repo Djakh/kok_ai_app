@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:kok_ai_app/assets/themes/app_colors.dart';
@@ -41,7 +42,12 @@ class ProfileLikedPostsPage extends StatelessWidget {
           onPressed: () => context.pop(),
           icon: const Icon(Icons.arrow_back_rounded),
         ),
-        Expanded(child: Text('Liked Posts', style: Style.title20(context))),
+        Expanded(
+          child: Text(
+            'settings_liked_posts'.tr(),
+            style: Style.title20(context),
+          ),
+        ),
       ],
     ),
   );

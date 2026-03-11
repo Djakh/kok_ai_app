@@ -1,0 +1,56 @@
+import 'package:kok_ai_app/core/network/api_client.dart';
+import 'package:kok_ai_app/core/network/auth_token_store.dart';
+
+class AuthApiService {
+  const AuthApiService({required this.apiClient, required this.tokenStore});
+
+  final ApiClient apiClient;
+  final AuthTokenStore tokenStore;
+
+  Future<void> login({required String email, required String password}) async {
+    final data = await apiClient.post(
+      '/auth/login',
+      body: {'email': email, 'password': password},
+    );
+    await saveTokensFromData(Map<String, dynamic>.from(data as Map));
+  }
+
+  Future<void> register({
+    required String email,
+    required String username,
+    required String password,
+    required String fullName,
+  }) async {
+    final data = await apiClient.post(
+      '/auth/register',
+      body: {
+        'email': email,
+        'username': username,
+        'password': password,
+        'full_name': fullName,
+      },
+    );
+    await saveTokensFromData(Map<String, dynamic>.from(data as Map));
+  }
+
+  Future<void> logout() async {
+    final refreshToken = await tokenStore.readRefreshToken();
+    if (refreshToken != null && refreshToken.isNotEmpty) {
+      await apiClient.post(
+        '/auth/logout',
+        body: {'refresh_token': refreshToken},
+      );
+    }
+    await tokenStore.clearTokens();
+  }
+
+  Future<void> saveTokensFromData(Map<String, dynamic> data) async {
+    final accessToken = '${data['access_token'] ?? ''}';
+    final refreshToken = '${data['refresh_token'] ?? ''}';
+    if (accessToken.isEmpty || refreshToken.isEmpty) return;
+    await tokenStore.saveTokens(
+      accessToken: accessToken,
+      refreshToken: refreshToken,
+    );
+  }
+}

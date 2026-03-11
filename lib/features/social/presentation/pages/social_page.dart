@@ -1,17 +1,24 @@
 import 'dart:io';
 
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:kok_ai_app/assets/themes/app_colors.dart';
 import 'package:kok_ai_app/assets/themes/style.dart';
 import 'package:kok_ai_app/features/social/data/models/social_post_payload.dart';
+import 'package:kok_ai_app/features/social/data/services/social_api_service.dart';
 import 'package:kok_ai_app/features/social/data/services/social_post_draft_store.dart';
 import 'package:kok_ai_app/features/common/presentation/widgets/kok_card.dart';
 import 'package:kok_ai_app/injection_container.dart';
 
 class SocialPostComment {
-  const SocialPostComment({required this.user, required this.avatar, required this.text, required this.time});
+  const SocialPostComment({
+    required this.user,
+    required this.avatar,
+    required this.text,
+    required this.time,
+  });
 
   final String user;
   final String avatar;
@@ -46,19 +53,20 @@ class SocialPost {
   final int likes;
   final List<SocialPostComment> comments;
 
-  SocialPost copyWith({int? likes, List<SocialPostComment>? comments}) => SocialPost(
-    id: id,
-    user: user,
-    avatar: avatar,
-    title: title,
-    time: time,
-    content: content,
-    image: image,
-    treeName: treeName,
-    treeLocation: treeLocation,
-    likes: likes ?? this.likes,
-    comments: comments ?? this.comments,
-  );
+  SocialPost copyWith({int? likes, List<SocialPostComment>? comments}) =>
+      SocialPost(
+        id: id,
+        user: user,
+        avatar: avatar,
+        title: title,
+        time: time,
+        content: content,
+        image: image,
+        treeName: treeName,
+        treeLocation: treeLocation,
+        likes: likes ?? this.likes,
+        comments: comments ?? this.comments,
+      );
 }
 
 class SocialPage extends StatefulWidget {
@@ -73,8 +81,10 @@ class SocialPageState extends State<SocialPage> {
   final commentControllerMap = <int, TextEditingController>{};
   final imagePicker = ImagePicker();
   final postDraftStore = sl<SocialPostDraftStore>();
+  final socialApiService = sl<SocialApiService>();
 
   bool showCreatePostSheet = false;
+  bool isCreatingPost = false;
   String? draftImagePath;
   Position? draftPosition;
   SocialPostPayload? preparedPostPayload;
@@ -96,8 +106,18 @@ class SocialPageState extends State<SocialPage> {
       treeLocation: 'Central Park, NY',
       likes: 42,
       comments: [
-        const SocialPostComment(user: 'John Smith', avatar: '🌲', text: 'Congratulations Maria! 🌳', time: '1 hour ago'),
-        const SocialPostComment(user: 'Emma Wilson', avatar: '🌳', text: 'Beautiful tree, I will look for it!', time: '45 min ago'),
+        const SocialPostComment(
+          user: 'John Smith',
+          avatar: '🌲',
+          text: 'Congratulations Maria! 🌳',
+          time: '1 hour ago',
+        ),
+        const SocialPostComment(
+          user: 'Emma Wilson',
+          avatar: '🌳',
+          text: 'Beautiful tree, I will look for it!',
+          time: '45 min ago',
+        ),
       ],
     ),
     SocialPost(
@@ -106,10 +126,16 @@ class SocialPageState extends State<SocialPage> {
       avatar: '🍃',
       title: 'Environmental Advocate',
       time: '5 hours ago',
-      content: 'Completed the weekly challenge! Registered 10 trees across 3 neighborhoods. Let\'s keep our cities green! 🌿',
+      content:
+          'Completed the weekly challenge! Registered 10 trees across 3 neighborhoods. Let\'s keep our cities green! 🌿',
       likes: 67,
       comments: const [
-        SocialPostComment(user: 'Sarah Chen', avatar: '🌟', text: 'Amazing work Alex!', time: '4 hours ago'),
+        SocialPostComment(
+          user: 'Sarah Chen',
+          avatar: '🌟',
+          text: 'Amazing work Alex!',
+          time: '4 hours ago',
+        ),
       ],
     ),
     SocialPost(
@@ -118,12 +144,23 @@ class SocialPageState extends State<SocialPage> {
       avatar: '🌟',
       title: 'Top Guardian • Level 5',
       time: '1 day ago',
-      content: 'Organized a community tree walk this weekend. 15 people joined and we registered 23 new trees together! 🚶‍♀️🌳',
+      content:
+          'Organized a community tree walk this weekend. 15 people joined and we registered 23 new trees together! 🚶‍♀️🌳',
       image: 'community',
       likes: 89,
       comments: const [
-        SocialPostComment(user: 'Mike Johnson', avatar: '🌲', text: 'Count me in next week!', time: '1 day ago'),
-        SocialPostComment(user: 'Emma Davis', avatar: '🌿', text: 'I\'d love to join too 🙋‍♀️', time: '20 hours ago'),
+        SocialPostComment(
+          user: 'Mike Johnson',
+          avatar: '🌲',
+          text: 'Count me in next week!',
+          time: '1 day ago',
+        ),
+        SocialPostComment(
+          user: 'Emma Davis',
+          avatar: '🌿',
+          text: 'I\'d love to join too 🙋‍♀️',
+          time: '20 hours ago',
+        ),
       ],
     ),
   ];
@@ -165,7 +202,9 @@ class SocialPageState extends State<SocialPage> {
     final exists = expandedPostIds.contains(postId);
     setState(() {
       if (exists) {
-        expandedPostIds = expandedPostIds.where((item) => item != postId).toList();
+        expandedPostIds = expandedPostIds
+            .where((item) => item != postId)
+            .toList();
       } else {
         expandedPostIds = [...expandedPostIds, postId];
       }
@@ -182,7 +221,15 @@ class SocialPageState extends State<SocialPage> {
           .map(
             (post) => post.id == postId
                 ? post.copyWith(
-                    comments: [...post.comments, SocialPostComment(user: 'You', avatar: '🍃', text: text, time: 'Just now')],
+                    comments: [
+                      ...post.comments,
+                      SocialPostComment(
+                        user: 'You',
+                        avatar: '🍃',
+                        text: text,
+                        time: 'Just now',
+                      ),
+                    ],
                   )
                 : post,
           )
@@ -192,7 +239,10 @@ class SocialPageState extends State<SocialPage> {
   }
 
   Future<void> onPickPostImage() async {
-    final image = await imagePicker.pickImage(source: ImageSource.gallery, imageQuality: 86);
+    final image = await imagePicker.pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 86,
+    );
     if (image == null) return;
     setState(() => draftImagePath = image.path);
   }
@@ -206,17 +256,24 @@ class SocialPageState extends State<SocialPage> {
       permission = await Geolocator.requestPermission();
     }
 
-    if (permission == LocationPermission.denied || permission == LocationPermission.deniedForever) {
+    if (permission == LocationPermission.denied ||
+        permission == LocationPermission.deniedForever) {
       return;
     }
 
-    final location = await Geolocator.getCurrentPosition(locationSettings: const LocationSettings(accuracy: LocationAccuracy.best));
+    final location = await Geolocator.getCurrentPosition(
+      locationSettings: const LocationSettings(accuracy: LocationAccuracy.best),
+    );
     setState(() => draftPosition = location);
   }
 
   Future<void> onCreatePost() async {
+    if (isCreatingPost) return;
+
     final text = newPostController.text.trim();
     if (text.isEmpty) return;
+
+    setState(() => isCreatingPost = true);
 
     await captureDraftLocation();
 
@@ -235,21 +292,36 @@ class SocialPageState extends State<SocialPage> {
       time: 'Just now',
       content: text,
       image: draftImagePath,
-      treeLocation: draftPosition == null ? null : '${draftPosition!.latitude.toStringAsFixed(6)}, ${draftPosition!.longitude.toStringAsFixed(6)}',
+      treeLocation: draftPosition == null
+          ? null
+          : '${draftPosition!.latitude.toStringAsFixed(6)}, ${draftPosition!.longitude.toStringAsFixed(6)}',
       likes: 0,
       comments: const [],
     );
 
-    setState(() {
-      posts = [newPost, ...posts];
-      newPostController.clear();
-      draftImagePath = null;
-      draftPosition = null;
-      showCreatePostSheet = false;
-    });
+    try {
+      await socialApiService.createPost(preparedPostPayload!);
+      if (!mounted) return;
 
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Post payload prepared for server integration')));
+      setState(() {
+        posts = [newPost, ...posts];
+        newPostController.clear();
+        draftImagePath = null;
+        draftPosition = null;
+        showCreatePostSheet = false;
+        isCreatingPost = false;
+      });
+
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('social_payload_ready'.tr())));
+    } catch (error) {
+      if (!mounted) return;
+      setState(() => isCreatingPost = false);
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('$error')));
+    }
   }
 
   /// --- Widgets ---
@@ -259,7 +331,9 @@ class SocialPageState extends State<SocialPage> {
     padding: const EdgeInsets.fromLTRB(16, 14, 16, 12),
     child: Row(
       children: [
-        Expanded(child: Text('Social', style: Style.headline24(context))),
+        Expanded(
+          child: Text('social_title'.tr(), style: Style.headline24(context)),
+        ),
         SizedBox(
           height: 40,
           child: ElevatedButton(
@@ -270,7 +344,14 @@ class SocialPageState extends State<SocialPage> {
               shape: RoundedRectangleBorder(borderRadius: Style.border12),
               elevation: 0,
             ),
-            child: Text('Create Post', style: Style.body14(context, color: Colors.white, weight: FontWeight.w600)),
+            child: Text(
+              'social_create_post'.tr(),
+              style: Style.body14(
+                context,
+                color: Colors.white,
+                weight: FontWeight.w600,
+              ),
+            ),
           ),
         ),
       ],
@@ -285,26 +366,50 @@ class SocialPageState extends State<SocialPage> {
         child: Container(
           constraints: const BoxConstraints(maxWidth: 500),
           padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
-          decoration: BoxDecoration(color: Colors.white, borderRadius: const BorderRadius.vertical(top: Radius.circular(24))),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+          ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               Row(
                 children: [
-                  Expanded(child: Text('Create a Post', style: Style.title20(context))),
-                  IconButton(onPressed: () => setState(() => showCreatePostSheet = false), icon: const Icon(Icons.close_rounded)),
+                  Expanded(
+                    child: Text(
+                      'social_create_post_sheet_title'.tr(),
+                      style: Style.title20(context),
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: () =>
+                        setState(() => showCreatePostSheet = false),
+                    icon: const Icon(Icons.close_rounded),
+                  ),
                 ],
               ),
               const SizedBox(height: 8),
               Row(
                 children: [
-                  avatarCircle('🍃', [AppColors.primary, AppColors.brightLeafGreen]),
+                  avatarCircle('🍃', [
+                    AppColors.primary,
+                    AppColors.brightLeafGreen,
+                  ]),
                   const SizedBox(width: 10),
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('You', style: Style.body14(context, weight: FontWeight.w700)),
-                      Text('Tree Guardian', style: Style.body12(context, color: AppColors.gray717171)),
+                      Text(
+                        'You',
+                        style: Style.body14(context, weight: FontWeight.w700),
+                      ),
+                      Text(
+                        'Tree Guardian',
+                        style: Style.body12(
+                          context,
+                          color: AppColors.gray717171,
+                        ),
+                      ),
                     ],
                   ),
                 ],
@@ -314,9 +419,15 @@ class SocialPageState extends State<SocialPage> {
                 controller: newPostController,
                 maxLines: 4,
                 decoration: InputDecoration(
-                  hintText: 'Share your tree discovery, achievement, or thoughts...',
-                  border: OutlineInputBorder(borderRadius: Style.border12, borderSide: const BorderSide(color: AppColors.grayE8E8E8)),
-                  focusedBorder: OutlineInputBorder(borderRadius: Style.border12, borderSide: const BorderSide(color: AppColors.primary)),
+                  hintText: 'social_post_hint'.tr(),
+                  border: OutlineInputBorder(
+                    borderRadius: Style.border12,
+                    borderSide: const BorderSide(color: AppColors.grayE8E8E8),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: Style.border12,
+                    borderSide: const BorderSide(color: AppColors.primary),
+                  ),
                 ),
               ),
               if (draftImagePath != null) ...[
@@ -327,11 +438,18 @@ class SocialPageState extends State<SocialPage> {
                       height: 150,
                       decoration: BoxDecoration(
                         borderRadius: Style.border12,
-                        gradient: const LinearGradient(colors: [Color(0x334CAF6D), Color(0x336BCB77)]),
+                        gradient: const LinearGradient(
+                          colors: [Color(0x334CAF6D), Color(0x336BCB77)],
+                        ),
                       ),
                       clipBehavior: Clip.hardEdge,
                       alignment: Alignment.center,
-                      child: Image.file(File(draftImagePath!), fit: BoxFit.cover, width: double.infinity, height: double.infinity),
+                      child: Image.file(
+                        File(draftImagePath!),
+                        fit: BoxFit.cover,
+                        width: double.infinity,
+                        height: double.infinity,
+                      ),
                     ),
                     Positioned(
                       right: 6,
@@ -341,7 +459,10 @@ class SocialPageState extends State<SocialPage> {
                         child: Container(
                           width: 28,
                           height: 28,
-                          decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
+                          decoration: const BoxDecoration(
+                            color: Colors.white,
+                            shape: BoxShape.circle,
+                          ),
                           child: const Icon(Icons.close_rounded, size: 18),
                         ),
                       ),
@@ -363,20 +484,41 @@ class SocialPageState extends State<SocialPage> {
               Row(
                 children: [
                   TextButton.icon(
-                    onPressed: onPickPostImage,
+                    onPressed: isCreatingPost ? null : onPickPostImage,
                     icon: const Icon(Icons.image_outlined, size: 18),
-                    label: Text('Add Photo', style: Style.body14(context)),
+                    label: Text(
+                      'social_add_photo'.tr(),
+                      style: Style.body14(context),
+                    ),
                   ),
                   const Spacer(),
                   ElevatedButton(
-                    onPressed: () => onCreatePost(),
+                    onPressed: isCreatingPost ? null : () => onCreatePost(),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.primary,
                       foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(borderRadius: Style.border12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: Style.border12,
+                      ),
                       elevation: 0,
                     ),
-                    child: Text('Post', style: Style.body14(context, color: Colors.white, weight: FontWeight.w600)),
+                    child: isCreatingPost
+                        ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2.2,
+                              color: Colors.white,
+                            ),
+                          )
+                        : Text(
+                            'social_post_button'.tr(),
+                            style: Style.body14(
+                              context,
+                              color: Colors.white,
+                              weight: FontWeight.w600,
+                            ),
+                          ),
                   ),
                 ],
               ),
@@ -390,7 +532,10 @@ class SocialPageState extends State<SocialPage> {
   Widget avatarCircle(String emoji, List<Color> colors) => Container(
     width: 48,
     height: 48,
-    decoration: BoxDecoration(gradient: LinearGradient(colors: colors), shape: BoxShape.circle),
+    decoration: BoxDecoration(
+      gradient: LinearGradient(colors: colors),
+      shape: BoxShape.circle,
+    ),
     alignment: Alignment.center,
     child: Text(emoji, style: const TextStyle(fontSize: 22)),
   );
@@ -412,15 +557,36 @@ class SocialPageState extends State<SocialPage> {
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    avatarCircle(post.avatar, const [AppColors.warmEarthBrown, AppColors.lightEarthBrown]),
+                    avatarCircle(post.avatar, const [
+                      AppColors.warmEarthBrown,
+                      AppColors.lightEarthBrown,
+                    ]),
                     const SizedBox(width: 10),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(post.user, style: Style.body14(context, weight: FontWeight.w700)),
-                          Text(post.title, style: Style.body12(context, color: AppColors.gray717171)),
-                          Text(post.time, style: Style.body12(context, color: AppColors.gray717171)),
+                          Text(
+                            post.user,
+                            style: Style.body14(
+                              context,
+                              weight: FontWeight.w700,
+                            ),
+                          ),
+                          Text(
+                            post.title,
+                            style: Style.body12(
+                              context,
+                              color: AppColors.gray717171,
+                            ),
+                          ),
+                          Text(
+                            post.time,
+                            style: Style.body12(
+                              context,
+                              color: AppColors.gray717171,
+                            ),
+                          ),
                         ],
                       ),
                     ),
@@ -434,13 +600,23 @@ class SocialPageState extends State<SocialPage> {
           if (post.image != null)
             Container(
               height: 190,
-              decoration: const BoxDecoration(gradient: LinearGradient(colors: [Color(0xFFE8F5E9), Color(0xFFF5F5DC)])),
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [Color(0xFFE8F5E9), Color(0xFFF5F5DC)],
+                ),
+              ),
               child: Stack(
                 children: [
                   Positioned.fill(
                     child: post.image != null && File(post.image!).existsSync()
                         ? Image.file(File(post.image!), fit: BoxFit.cover)
-                        : const Center(child: Icon(Icons.park_rounded, color: AppColors.primary, size: 72)),
+                        : const Center(
+                            child: Icon(
+                              Icons.park_rounded,
+                              color: AppColors.primary,
+                              size: 72,
+                            ),
+                          ),
                   ),
                   if (post.treeName != null)
                     Positioned(
@@ -449,17 +625,36 @@ class SocialPageState extends State<SocialPage> {
                       bottom: 12,
                       child: Container(
                         padding: const EdgeInsets.all(10),
-                        decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.95), borderRadius: Style.border12),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.95),
+                          borderRadius: Style.border12,
+                        ),
                         child: Row(
                           children: [
-                            const Icon(Icons.park_rounded, color: AppColors.primary, size: 18),
+                            const Icon(
+                              Icons.park_rounded,
+                              color: AppColors.primary,
+                              size: 18,
+                            ),
                             const SizedBox(width: 8),
                             Expanded(
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text(post.treeName!, style: Style.body14(context, weight: FontWeight.w700)),
-                                  Text(post.treeLocation ?? '', style: Style.body12(context, color: AppColors.gray717171)),
+                                  Text(
+                                    post.treeName!,
+                                    style: Style.body14(
+                                      context,
+                                      weight: FontWeight.w700,
+                                    ),
+                                  ),
+                                  Text(
+                                    post.treeLocation ?? '',
+                                    style: Style.body12(
+                                      context,
+                                      color: AppColors.gray717171,
+                                    ),
+                                  ),
                                 ],
                               ),
                             ),
@@ -476,9 +671,15 @@ class SocialPageState extends State<SocialPage> {
               children: [
                 Row(
                   children: [
-                    Text('${post.likes + (isLiked ? 1 : 0)} likes', style: Style.body12(context, color: AppColors.gray717171)),
+                    Text(
+                      '${post.likes + (isLiked ? 1 : 0)} likes',
+                      style: Style.body12(context, color: AppColors.gray717171),
+                    ),
                     const Spacer(),
-                    Text('${post.comments.length} comments', style: Style.body12(context, color: AppColors.gray717171)),
+                    Text(
+                      '${post.comments.length} comments',
+                      style: Style.body12(context, color: AppColors.gray717171),
+                    ),
                   ],
                 ),
                 const SizedBox(height: 8),
@@ -487,7 +688,9 @@ class SocialPageState extends State<SocialPage> {
                 Row(
                   children: [
                     actionTextButton(
-                      icon: isLiked ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+                      icon: isLiked
+                          ? Icons.favorite_rounded
+                          : Icons.favorite_border_rounded,
                       label: 'Like',
                       color: isLiked ? AppColors.primary : AppColors.gray717171,
                       onTap: () => onToggleLike(post.id),
@@ -522,7 +725,10 @@ class SocialPageState extends State<SocialPage> {
                       child: Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          avatarCircle(item.avatar, const [AppColors.brightLeafGreen, AppColors.primary]),
+                          avatarCircle(item.avatar, const [
+                            AppColors.brightLeafGreen,
+                            AppColors.primary,
+                          ]),
                           const SizedBox(width: 8),
                           Expanded(
                             child: Column(
@@ -530,19 +736,44 @@ class SocialPageState extends State<SocialPage> {
                               children: [
                                 Container(
                                   width: double.infinity,
-                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                                  decoration: BoxDecoration(color: Colors.white, borderRadius: Style.border16),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 8,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    borderRadius: Style.border16,
+                                  ),
                                   child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
-                                      Text(item.user, style: Style.body12(context, weight: FontWeight.w700)),
-                                      Text(item.text, style: Style.body14(context)),
+                                      Text(
+                                        item.user,
+                                        style: Style.body12(
+                                          context,
+                                          weight: FontWeight.w700,
+                                        ),
+                                      ),
+                                      Text(
+                                        item.text,
+                                        style: Style.body14(context),
+                                      ),
                                     ],
                                   ),
                                 ),
                                 Padding(
-                                  padding: const EdgeInsets.only(left: 10, top: 4),
-                                  child: Text(item.time, style: Style.body12(context, color: AppColors.gray717171)),
+                                  padding: const EdgeInsets.only(
+                                    left: 10,
+                                    top: 4,
+                                  ),
+                                  child: Text(
+                                    item.time,
+                                    style: Style.body12(
+                                      context,
+                                      color: AppColors.gray717171,
+                                    ),
+                                  ),
                                 ),
                               ],
                             ),
@@ -553,7 +784,10 @@ class SocialPageState extends State<SocialPage> {
                   const SizedBox(height: 10),
                   Row(
                     children: [
-                      avatarCircle('🍃', const [AppColors.primary, AppColors.brightLeafGreen]),
+                      avatarCircle('🍃', const [
+                        AppColors.primary,
+                        AppColors.brightLeafGreen,
+                      ]),
                       const SizedBox(width: 8),
                       Expanded(
                         child: TextField(
@@ -561,9 +795,22 @@ class SocialPageState extends State<SocialPage> {
                           onSubmitted: (value) => onAddComment(post.id),
                           decoration: InputDecoration(
                             hintText: 'Write a comment...',
-                            contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(30), borderSide: const BorderSide(color: AppColors.grayE8E8E8)),
-                            focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(30), borderSide: const BorderSide(color: AppColors.primary)),
+                            contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 14,
+                              vertical: 8,
+                            ),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(30),
+                              borderSide: const BorderSide(
+                                color: AppColors.grayE8E8E8,
+                              ),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(30),
+                              borderSide: const BorderSide(
+                                color: AppColors.primary,
+                              ),
+                            ),
                           ),
                         ),
                       ),
@@ -573,8 +820,15 @@ class SocialPageState extends State<SocialPage> {
                         child: Container(
                           width: 36,
                           height: 36,
-                          decoration: const BoxDecoration(color: AppColors.primary, shape: BoxShape.circle),
-                          child: const Icon(Icons.send_rounded, color: Colors.white, size: 18),
+                          decoration: const BoxDecoration(
+                            color: AppColors.primary,
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(
+                            Icons.send_rounded,
+                            color: Colors.white,
+                            size: 18,
+                          ),
                         ),
                       ),
                     ],
@@ -587,7 +841,12 @@ class SocialPageState extends State<SocialPage> {
     );
   }
 
-  Widget actionTextButton({required IconData icon, required String label, required Color color, required VoidCallback onTap}) => Expanded(
+  Widget actionTextButton({
+    required IconData icon,
+    required String label,
+    required Color color,
+    required VoidCallback onTap,
+  }) => Expanded(
     child: TextButton.icon(
       onPressed: onTap,
       icon: Icon(icon, color: color, size: 18),
@@ -610,7 +869,8 @@ class SocialPageState extends State<SocialPage> {
                 child: ListView.separated(
                   padding: const EdgeInsets.fromLTRB(16, 12, 16, 92),
                   itemBuilder: (context, index) => postCard(posts[index]),
-                  separatorBuilder: (context, index) => const SizedBox(height: 10),
+                  separatorBuilder: (context, index) =>
+                      const SizedBox(height: 10),
                   itemCount: posts.length,
                 ),
               ),

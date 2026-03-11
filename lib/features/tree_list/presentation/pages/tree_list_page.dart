@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:kok_ai_app/assets/themes/app_colors.dart';
@@ -22,23 +23,34 @@ class TreeListPage extends StatelessWidget {
     width: double.infinity,
     padding: const EdgeInsets.fromLTRB(20, 18, 20, 18),
     decoration: const BoxDecoration(
-      gradient: LinearGradient(colors: [AppColors.warmEarthBrown, AppColors.lightEarthBrown]),
+      gradient: LinearGradient(
+        colors: [AppColors.warmEarthBrown, AppColors.lightEarthBrown],
+      ),
       borderRadius: BorderRadius.vertical(bottom: Radius.circular(24)),
     ),
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('My Trees', style: Style.headline28(context, color: Colors.white)),
+        Text(
+          'tree_list_title'.tr(),
+          style: Style.headline28(context, color: Colors.white),
+        ),
         const SizedBox(height: 4),
         Text(
-          'All registered trees in your account',
-          style: Style.body14(context, color: Colors.white.withValues(alpha: 0.9)),
+          'tree_list_subtitle'.tr(),
+          style: Style.body14(
+            context,
+            color: Colors.white.withValues(alpha: 0.9),
+          ),
         ),
       ],
     ),
   );
 
-  Widget treeCard(BuildContext context, (String, String, String, String, String) tree) => GestureDetector(
+  Widget treeCard(
+    BuildContext context,
+    (String, String, String, String, String) tree,
+  ) => GestureDetector(
     onTap: () => context.push('/app/tree/${tree.$1}'),
     child: KokCard(
       child: Row(
@@ -47,7 +59,9 @@ class TreeListPage extends StatelessWidget {
             width: 52,
             height: 52,
             decoration: BoxDecoration(
-              gradient: const LinearGradient(colors: [AppColors.primary, AppColors.brightLeafGreen]),
+              gradient: const LinearGradient(
+                colors: [AppColors.primary, AppColors.brightLeafGreen],
+              ),
               borderRadius: Style.border12,
             ),
             alignment: Alignment.center,
@@ -58,14 +72,27 @@ class TreeListPage extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(tree.$2, style: Style.body16(context, weight: FontWeight.w700)),
+                Text(
+                  tree.$2,
+                  style: Style.body16(context, weight: FontWeight.w700),
+                ),
                 const SizedBox(height: 2),
-                Text('📍 ${tree.$3}', style: Style.body12(context, color: AppColors.gray717171)),
-                Text(tree.$4, style: Style.body12(context, color: AppColors.gray717171)),
+                Text(
+                  '📍 ${tree.$3}',
+                  style: Style.body12(context, color: AppColors.gray717171),
+                ),
+                Text(
+                  tree.$4,
+                  style: Style.body12(context, color: AppColors.gray717171),
+                ),
               ],
             ),
           ),
-          const Icon(Icons.arrow_forward_ios_rounded, size: 16, color: AppColors.primary),
+          const Icon(
+            Icons.arrow_forward_ios_rounded,
+            size: 16,
+            color: AppColors.primary,
+          ),
         ],
       ),
     ),
@@ -77,9 +104,17 @@ class TreeListPage extends StatelessWidget {
       width: 64,
       height: 64,
       decoration: const BoxDecoration(
-        gradient: LinearGradient(colors: [AppColors.primary, AppColors.brightLeafGreen]),
+        gradient: LinearGradient(
+          colors: [AppColors.primary, AppColors.brightLeafGreen],
+        ),
         shape: BoxShape.circle,
-        boxShadow: [BoxShadow(color: Color(0x33000000), blurRadius: 16, offset: Offset(0, 8))],
+        boxShadow: [
+          BoxShadow(
+            color: Color(0x33000000),
+            blurRadius: 16,
+            offset: Offset(0, 8),
+          ),
+        ],
       ),
       child: const Icon(Icons.park_rounded, color: Colors.white, size: 30),
     ),

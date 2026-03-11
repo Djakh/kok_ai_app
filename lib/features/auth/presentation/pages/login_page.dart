@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:kok_ai_app/assets/themes/app_colors.dart';
 import 'package:kok_ai_app/assets/themes/style.dart';
+import 'package:kok_ai_app/features/auth/data/services/auth_api_service.dart';
 import 'package:kok_ai_app/features/common/presentation/widgets/kok_gradient_background.dart';
+import 'package:kok_ai_app/injection_container.dart';
 import 'package:kok_ai_app/router.dart';
 
 class LoginPage extends StatefulWidget {
@@ -15,6 +17,8 @@ class LoginPage extends StatefulWidget {
 class LoginPageState extends State<LoginPage> {
   final emailController = TextEditingController();
   final passwordController = TextEditingController();
+  final authApiService = sl<AuthApiService>();
+  bool isSubmitting = false;
 
   /// --- Life cycle ---
 
@@ -27,8 +31,25 @@ class LoginPageState extends State<LoginPage> {
 
   /// --- Methods ---
 
-  void onLogin() {
-    context.go(dashboardRoute);
+  Future<void> onLogin() async {
+    if (isSubmitting) return;
+    final email = emailController.text.trim();
+    final password = passwordController.text;
+    if (email.isEmpty || password.isEmpty) return;
+
+    setState(() => isSubmitting = true);
+    try {
+      await authApiService.login(email: email, password: password);
+      if (!mounted) return;
+      setState(() => isSubmitting = false);
+      context.go(dashboardRoute);
+    } catch (error) {
+      if (!mounted) return;
+      setState(() => isSubmitting = false);
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('$error')));
+    }
   }
 
   /// --- Widgets ---
@@ -38,14 +59,23 @@ class LoginPageState extends State<LoginPage> {
       Container(
         width: 96,
         height: 96,
-        decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.2), shape: BoxShape.circle),
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: 0.2),
+          shape: BoxShape.circle,
+        ),
         alignment: Alignment.center,
         child: const Icon(Icons.park_rounded, color: Colors.white, size: 48),
       ),
       const SizedBox(height: 16),
       Text('KOK.AI', style: Style.headline32(context, color: Colors.white)),
       const SizedBox(height: 6),
-      Text('Protect Urban Trees', style: Style.body18(context, color: Colors.white.withValues(alpha: 0.92))),
+      Text(
+        'Protect Urban Trees',
+        style: Style.body18(
+          context,
+          color: Colors.white.withValues(alpha: 0.92),
+        ),
+      ),
     ],
   );
 
@@ -56,7 +86,10 @@ class LoginPageState extends State<LoginPage> {
     bool obscureText = false,
   }) => Container(
     height: 56,
-    decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.95), borderRadius: Style.border20),
+    decoration: BoxDecoration(
+      color: Colors.white.withValues(alpha: 0.95),
+      borderRadius: Style.border20,
+    ),
     padding: Style.paddingH16,
     child: Row(
       children: [
@@ -66,7 +99,10 @@ class LoginPageState extends State<LoginPage> {
           child: TextField(
             controller: controller,
             obscureText: obscureText,
-            decoration: InputDecoration(border: InputBorder.none, hintText: hintText),
+            decoration: InputDecoration(
+              border: InputBorder.none,
+              hintText: hintText,
+            ),
           ),
         ),
       ],
@@ -75,7 +111,11 @@ class LoginPageState extends State<LoginPage> {
 
   Widget loginForm() => Column(
     children: [
-      inputField(controller: emailController, hintText: 'Email or phone', icon: Icons.mail_outline_rounded),
+      inputField(
+        controller: emailController,
+        hintText: 'Email or phone',
+        icon: Icons.mail_outline_rounded,
+      ),
       const SizedBox(height: 14),
       inputField(
         controller: passwordController,
@@ -95,7 +135,23 @@ class LoginPageState extends State<LoginPage> {
             shape: RoundedRectangleBorder(borderRadius: Style.border20),
             elevation: 0,
           ),
-          child: Text('Login', style: Style.body18(context, color: Colors.white, weight: FontWeight.w600)),
+          child: isSubmitting
+              ? const SizedBox(
+                  width: 24,
+                  height: 24,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2.5,
+                    color: Colors.white,
+                  ),
+                )
+              : Text(
+                  'Login',
+                  style: Style.body18(
+                    context,
+                    color: Colors.white,
+                    weight: FontWeight.w600,
+                  ),
+                ),
         ),
       ),
       const SizedBox(height: 14),
@@ -103,7 +159,11 @@ class LoginPageState extends State<LoginPage> {
         onPressed: () => context.go(registerRoute),
         child: Text(
           'Don\'t have an account? Register',
-          style: Style.body14(context, color: Colors.white, weight: FontWeight.w500).copyWith(decoration: TextDecoration.underline),
+          style: Style.body14(
+            context,
+            color: Colors.white,
+            weight: FontWeight.w500,
+          ).copyWith(decoration: TextDecoration.underline),
         ),
       ),
     ],
@@ -112,7 +172,11 @@ class LoginPageState extends State<LoginPage> {
   @override
   Widget build(BuildContext context) => Scaffold(
     body: KokGradientBackground(
-      colors: const [AppColors.warmEarthBrown, AppColors.lightEarthBrown, AppColors.primary],
+      colors: const [
+        AppColors.warmEarthBrown,
+        AppColors.lightEarthBrown,
+        AppColors.primary,
+      ],
       child: SafeArea(
         child: Center(
           child: SingleChildScrollView(
@@ -121,11 +185,7 @@ class LoginPageState extends State<LoginPage> {
               constraints: const BoxConstraints(maxWidth: 380),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  logo(),
-                  const SizedBox(height: 36),
-                  loginForm(),
-                ],
+                children: [logo(), const SizedBox(height: 36), loginForm()],
               ),
             ),
           ),

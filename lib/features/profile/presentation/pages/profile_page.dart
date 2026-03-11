@@ -1,12 +1,23 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:kok_ai_app/assets/themes/app_colors.dart';
 import 'package:kok_ai_app/assets/themes/style.dart';
+import 'package:kok_ai_app/features/auth/data/services/auth_api_service.dart';
 import 'package:kok_ai_app/features/common/presentation/widgets/kok_card.dart';
+import 'package:kok_ai_app/injection_container.dart';
 import 'package:kok_ai_app/router.dart';
 
 class ProfilePage extends StatelessWidget {
   const ProfilePage({super.key});
+
+  /// --- Methods ---
+
+  Future<void> onLogout(BuildContext context) async {
+    await sl<AuthApiService>().logout();
+    if (!context.mounted) return;
+    context.go(loginRoute);
+  }
 
   /// --- Widgets ---
 
@@ -34,7 +45,7 @@ class ProfilePage extends StatelessWidget {
               icon: const Icon(Icons.settings_rounded, color: Colors.white),
             ),
             IconButton(
-              onPressed: () => context.go(loginRoute),
+              onPressed: () => onLogout(context),
               icon: const Icon(Icons.logout_rounded, color: Colors.white),
             ),
           ],
@@ -81,7 +92,7 @@ class ProfilePage extends StatelessWidget {
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    'Guardian Level 5',
+                    'profile_guardian_level'.tr(),
                     style: Style.body14(
                       context,
                       color: Colors.white.withValues(alpha: 0.95),
@@ -90,8 +101,16 @@ class ProfilePage extends StatelessWidget {
                   const SizedBox(height: 10),
                   Row(
                     children: [
-                      userInlineStat(context, '2,540', 'Followers'),
-                      userInlineStat(context, '1,132', 'Following'),
+                      userInlineStat(
+                        context,
+                        '2,540',
+                        'profile_followers'.tr(),
+                      ),
+                      userInlineStat(
+                        context,
+                        '1,132',
+                        'profile_following'.tr(),
+                      ),
                     ],
                   ),
                 ],
@@ -134,7 +153,7 @@ class ProfilePage extends StatelessWidget {
           context,
           Icons.park_rounded,
           '58',
-          'Trees',
+          'profile_trees'.tr(),
           AppColors.primary,
         ),
       ),
@@ -144,7 +163,7 @@ class ProfilePage extends StatelessWidget {
           context,
           Icons.monetization_on_rounded,
           '1,240',
-          'Coins',
+          'profile_coins'.tr(),
           AppColors.warmEarthBrown,
         ),
       ),
@@ -154,7 +173,7 @@ class ProfilePage extends StatelessWidget {
           context,
           Icons.feed_rounded,
           '86',
-          'Posts',
+          'profile_posts'.tr(),
           AppColors.brightLeafGreen,
         ),
       ),
@@ -188,7 +207,7 @@ class ProfilePage extends StatelessWidget {
           children: [
             Expanded(
               child: Text(
-                'Your Impact',
+                'profile_your_impact'.tr(),
                 style: Style.body16(context, weight: FontWeight.w700),
               ),
             ),
@@ -206,7 +225,7 @@ class ProfilePage extends StatelessWidget {
               child: impactMetric(
                 context,
                 '2.4t',
-                'CO₂ Saved',
+                'profile_co2_saved'.tr(),
                 AppColors.primary,
               ),
             ),
@@ -214,7 +233,7 @@ class ProfilePage extends StatelessWidget {
               child: impactMetric(
                 context,
                 '58',
-                'Trees',
+                'profile_trees'.tr(),
                 AppColors.warmEarthBrown,
               ),
             ),
@@ -222,7 +241,7 @@ class ProfilePage extends StatelessWidget {
               child: impactMetric(
                 context,
                 '145',
-                'Days',
+                'profile_days'.tr(),
                 AppColors.brightLeafGreen,
               ),
             ),
@@ -313,12 +332,12 @@ class ProfilePage extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Today\'s Challenge',
+                'profile_todays_challenge'.tr(),
                 style: Style.body14(context, weight: FontWeight.w700),
               ),
               const SizedBox(height: 2),
               Text(
-                'Register 2 new trees today',
+                'profile_register_2_trees'.tr(),
                 style: Style.body12(context, color: AppColors.gray717171),
               ),
               const SizedBox(height: 8),
@@ -409,24 +428,24 @@ class ProfilePage extends StatelessWidget {
                 entryTile(
                   context,
                   icon: Icons.emoji_events_rounded,
-                  title: 'Achievements',
-                  subtitle: '12 unlocked • tap to see all',
+                  title: 'profile_achievements'.tr(),
+                  subtitle: 'profile_achievements_subtitle'.tr(),
                   onTap: () => context.push(achievementsRoute),
                 ),
                 const SizedBox(height: 10),
                 entryTile(
                   context,
                   icon: Icons.military_tech_rounded,
-                  title: 'Top Guardians',
-                  subtitle: 'Tap to view ranking list',
+                  title: 'profile_top_guardians'.tr(),
+                  subtitle: 'profile_top_guardians_subtitle'.tr(),
                   onTap: () => context.push(topGuardiansRoute),
                 ),
                 const SizedBox(height: 10),
                 entryTile(
                   context,
                   icon: Icons.feed_rounded,
-                  title: 'Published Posts',
-                  subtitle: 'Tap to view your post list',
+                  title: 'profile_published_posts'.tr(),
+                  subtitle: 'profile_published_posts_subtitle'.tr(),
                   onTap: () => context.push(publishedPostsRoute),
                 ),
               ],

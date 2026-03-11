@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:kok_ai_app/assets/themes/app_colors.dart';
@@ -36,9 +37,9 @@ class ProfileEditPageState extends State<ProfileEditPage> {
   /// --- Methods ---
 
   void onSaveProfile() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Profile changes saved locally')),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text('edit_profile_saved'.tr())));
     context.pop();
   }
 
@@ -52,7 +53,12 @@ class ProfileEditPageState extends State<ProfileEditPage> {
           onPressed: () => context.pop(),
           icon: const Icon(Icons.arrow_back_rounded),
         ),
-        Expanded(child: Text('Edit Profile', style: Style.title20(context))),
+        Expanded(
+          child: Text(
+            'settings_edit_profile'.tr(),
+            style: Style.title20(context),
+          ),
+        ),
       ],
     ),
   );
@@ -136,7 +142,7 @@ class ProfileEditPageState extends State<ProfileEditPage> {
         shape: RoundedRectangleBorder(borderRadius: Style.border16),
       ),
       child: Text(
-        'Save Changes',
+        'edit_profile_save_changes'.tr(),
         style: Style.body16(
           context,
           color: Colors.white,
@@ -159,28 +165,28 @@ class ProfileEditPageState extends State<ProfileEditPage> {
           const SizedBox(height: 18),
           textFieldBox(
             context: context,
-            label: 'Name',
+            label: 'edit_profile_name'.tr(),
             controller: nameController,
           ),
           textFieldBox(
             context: context,
-            label: 'Username',
+            label: 'edit_profile_username'.tr(),
             controller: userNameController,
           ),
           textFieldBox(
             context: context,
-            label: 'Bio',
+            label: 'edit_profile_bio'.tr(),
             controller: bioController,
             maxLines: 3,
           ),
           textFieldBox(
             context: context,
-            label: 'Location',
+            label: 'edit_profile_location'.tr(),
             controller: locationController,
           ),
           textFieldBox(
             context: context,
-            label: 'Website',
+            label: 'edit_profile_website'.tr(),
             controller: websiteController,
           ),
           const SizedBox(height: 12),

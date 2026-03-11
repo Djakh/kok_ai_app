@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:kok_ai_app/assets/themes/app_colors.dart';
@@ -29,7 +30,9 @@ class ProfileSettingsPageState extends State<ProfileSettingsPage> {
           onPressed: () => context.pop(),
           icon: const Icon(Icons.arrow_back_rounded),
         ),
-        Expanded(child: Text('Settings', style: Style.title20(context))),
+        Expanded(
+          child: Text('settings_title'.tr(), style: Style.title20(context)),
+        ),
       ],
     ),
   );
@@ -146,37 +149,37 @@ class ProfileSettingsPageState extends State<ProfileSettingsPage> {
         padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
         children: [
           header(context),
-          sectionTitle(context, 'Account'),
+          sectionTitle(context, 'settings_account_section'.tr()),
           actionTile(
             context,
             icon: Icons.edit_rounded,
-            title: 'Edit Profile',
-            subtitle: 'Name, username, bio and avatar',
+            title: 'settings_edit_profile'.tr(),
+            subtitle: 'settings_edit_profile_subtitle'.tr(),
             onTap: () => context.push(profileEditRoute),
           ),
           const SizedBox(height: 10),
           actionTile(
             context,
             icon: Icons.language_rounded,
-            title: 'Localization',
-            subtitle: 'Choose your app language',
+            title: 'settings_localization'.tr(),
+            subtitle: 'settings_localization_subtitle'.tr(),
             onTap: () => context.push(profileLocalizationRoute),
           ),
           const SizedBox(height: 10),
-          sectionTitle(context, 'Social'),
+          sectionTitle(context, 'settings_social_section'.tr()),
           actionTile(
             context,
             icon: Icons.favorite_rounded,
-            title: 'Liked Posts',
-            subtitle: 'Review posts you liked',
+            title: 'settings_liked_posts'.tr(),
+            subtitle: 'settings_liked_posts_subtitle'.tr(),
             onTap: () => context.push(profileLikedPostsRoute),
           ),
           const SizedBox(height: 10),
           switchTile(
             context,
             icon: Icons.bookmark_rounded,
-            title: 'Auto Save My Posts',
-            subtitle: 'Store your published posts in personal archive',
+            title: 'settings_auto_save_posts'.tr(),
+            subtitle: 'settings_auto_save_posts_subtitle'.tr(),
             value: autoSavePostsEnabled,
             onChanged: (value) => setState(() => autoSavePostsEnabled = value),
           ),
@@ -184,19 +187,19 @@ class ProfileSettingsPageState extends State<ProfileSettingsPage> {
           switchTile(
             context,
             icon: Icons.notifications_active_rounded,
-            title: 'Push Notifications',
-            subtitle: 'Likes, comments and new followers alerts',
+            title: 'settings_push_notifications'.tr(),
+            subtitle: 'settings_push_notifications_subtitle'.tr(),
             value: pushNotificationsEnabled,
             onChanged: (value) =>
                 setState(() => pushNotificationsEnabled = value),
           ),
           const SizedBox(height: 10),
-          sectionTitle(context, 'Privacy & Safety'),
+          sectionTitle(context, 'settings_privacy_section'.tr()),
           switchTile(
             context,
             icon: Icons.lock_rounded,
-            title: 'Private Account',
-            subtitle: 'Only approved followers can see your content',
+            title: 'settings_private_account'.tr(),
+            subtitle: 'settings_private_account_subtitle'.tr(),
             value: privateAccountEnabled,
             onChanged: (value) => setState(() => privateAccountEnabled = value),
           ),
@@ -204,8 +207,8 @@ class ProfileSettingsPageState extends State<ProfileSettingsPage> {
           switchTile(
             context,
             icon: Icons.visibility_rounded,
-            title: 'Show Activity Status',
-            subtitle: 'Let people see when you are active',
+            title: 'settings_activity_status'.tr(),
+            subtitle: 'settings_activity_status_subtitle'.tr(),
             value: showActivityStatusEnabled,
             onChanged: (value) =>
                 setState(() => showActivityStatusEnabled = value),
@@ -214,8 +217,8 @@ class ProfileSettingsPageState extends State<ProfileSettingsPage> {
           switchTile(
             context,
             icon: Icons.alternate_email_rounded,
-            title: 'Allow Tagging',
-            subtitle: 'Allow others to mention you in posts',
+            title: 'settings_allow_tagging'.tr(),
+            subtitle: 'settings_allow_tagging_subtitle'.tr(),
             value: allowTaggingEnabled,
             onChanged: (value) => setState(() => allowTaggingEnabled = value),
           ),

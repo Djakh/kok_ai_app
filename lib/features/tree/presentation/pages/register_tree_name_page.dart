@@ -1,10 +1,12 @@
 import 'dart:async';
 
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:kok_ai_app/assets/themes/app_colors.dart';
 import 'package:kok_ai_app/assets/themes/style.dart';
 import 'package:kok_ai_app/features/tree/data/models/tree_registration_payload.dart';
+import 'package:kok_ai_app/features/tree/data/services/tree_api_service.dart';
 import 'package:kok_ai_app/features/tree/data/services/tree_registration_draft_store.dart';
 import 'package:kok_ai_app/injection_container.dart';
 import 'package:kok_ai_app/router.dart';
@@ -19,12 +21,21 @@ class RegisterTreeNamePage extends StatefulWidget {
 class RegisterTreeNamePageState extends State<RegisterTreeNamePage> {
   final treeNameController = TextEditingController();
   final draftStore = sl<TreeRegistrationDraftStore>();
+  final treeApiService = sl<TreeApiService>();
 
   bool showSuccess = false;
+  bool isSubmitting = false;
   Timer? timer;
   TreeRegistrationPayload? payload;
 
-  final suggestedNames = const ['Grand Oak', 'Park Maple', 'Guardian Willow', 'Street Elm', 'Noble Pine', 'Heritage Cedar'];
+  final suggestedNames = const [
+    'Grand Oak',
+    'Park Maple',
+    'Guardian Willow',
+    'Street Elm',
+    'Noble Pine',
+    'Heritage Cedar',
+  ];
 
   /// --- Life cycle ---
 
@@ -37,7 +48,9 @@ class RegisterTreeNamePageState extends State<RegisterTreeNamePage> {
 
   /// --- Methods ---
 
-  void onRegisterTree() {
+  Future<void> onRegisterTree() async {
+    if (isSubmitting) return;
+
     final entered = treeNameController.text.trim();
     if (entered.isEmpty) return;
 
@@ -45,25 +58,47 @@ class RegisterTreeNamePageState extends State<RegisterTreeNamePage> {
 
     final prepared = draftStore.preparePayload();
     if (prepared == null) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Tree data is incomplete. Please complete previous steps.')));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('register_name_incomplete'.tr())));
       return;
     }
 
     setState(() {
       payload = prepared;
-      showSuccess = true;
+      isSubmitting = true;
     });
 
-    timer = Timer(const Duration(milliseconds: 2800), () {
+    try {
+      await treeApiService.registerTree(prepared);
       if (!mounted) return;
-      context.go(dashboardRoute);
-    });
+
+      setState(() {
+        showSuccess = true;
+        isSubmitting = false;
+      });
+
+      timer = Timer(const Duration(milliseconds: 2800), () {
+        if (!mounted) return;
+        context.go(dashboardRoute);
+      });
+    } catch (error) {
+      if (!mounted) return;
+      setState(() => isSubmitting = false);
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('$error')));
+    }
   }
 
   /// --- Widgets ---
 
   Widget successView() => Container(
-    decoration: const BoxDecoration(gradient: LinearGradient(colors: [AppColors.primary, AppColors.brightLeafGreen])),
+    decoration: const BoxDecoration(
+      gradient: LinearGradient(
+        colors: [AppColors.primary, AppColors.brightLeafGreen],
+      ),
+    ),
     child: SafeArea(
       child: Center(
         child: Padding(
@@ -75,28 +110,57 @@ class RegisterTreeNamePageState extends State<RegisterTreeNamePage> {
                 tween: Tween(begin: 0.0, end: 1.0),
                 duration: const Duration(milliseconds: 900),
                 curve: Curves.elasticOut,
-                builder: (context, value, child) => Transform.scale(scale: value, child: child),
+                builder: (context, value, child) =>
+                    Transform.scale(scale: value, child: child),
                 child: Container(
                   width: 112,
                   height: 112,
-                  decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
+                  decoration: const BoxDecoration(
+                    color: Colors.white,
+                    shape: BoxShape.circle,
+                  ),
                   alignment: Alignment.center,
-                  child: const Icon(Icons.park_rounded, color: AppColors.primary, size: 56),
+                  child: const Icon(
+                    Icons.park_rounded,
+                    color: AppColors.primary,
+                    size: 56,
+                  ),
                 ),
               ),
               const SizedBox(height: 18),
-              Text('Tree Registered! 🌳', style: Style.headline32(context, color: Colors.white), textAlign: TextAlign.center),
+              Text(
+                'register_name_success_title'.tr(),
+                style: Style.headline32(context, color: Colors.white),
+                textAlign: TextAlign.center,
+              ),
               const SizedBox(height: 6),
-              Text('${treeNameController.text} is now ready for server sync', style: Style.body16(context, color: Colors.white.withValues(alpha: 0.95)), textAlign: TextAlign.center),
+              Text(
+                '${treeNameController.text} ${'register_name_success_subtitle'.tr()}',
+                style: Style.body16(
+                  context,
+                  color: Colors.white.withValues(alpha: 0.95),
+                ),
+                textAlign: TextAlign.center,
+              ),
               const SizedBox(height: 14),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.2), borderRadius: Style.border16),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.2),
+                  borderRadius: Style.border16,
+                ),
                 child: Text(
                   payload == null
                       ? ''
                       : 'name: ${payload!.name}\nlat: ${payload!.latitude.toStringAsFixed(6)}\nlng: ${payload!.longitude.toStringAsFixed(6)}\naccuracy: ±${payload!.accuracyMeters.toStringAsFixed(1)}m\nfront: ${payload!.frontImagePath}\ntrunk: ${payload!.trunkImagePath}\nleaves: ${payload!.leavesImagePath}',
-                  style: Style.body12(context, color: Colors.white, weight: FontWeight.w600),
+                  style: Style.body12(
+                    context,
+                    color: Colors.white,
+                    weight: FontWeight.w600,
+                  ),
                 ),
               ),
             ],
@@ -110,8 +174,17 @@ class RegisterTreeNamePageState extends State<RegisterTreeNamePage> {
     padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
     child: Row(
       children: [
-        IconButton(onPressed: () => context.go(dashboardRoute), icon: const Icon(Icons.close_rounded, color: AppColors.secondary)),
-        Expanded(child: Center(child: Text('Name Your Tree', style: Style.body16(context, weight: FontWeight.w700))),
+        IconButton(
+          onPressed: () => context.go(dashboardRoute),
+          icon: const Icon(Icons.close_rounded, color: AppColors.secondary),
+        ),
+        Expanded(
+          child: Center(
+            child: Text(
+              'register_name_title'.tr(),
+              style: Style.body16(context, weight: FontWeight.w700),
+            ),
+          ),
         ),
         const SizedBox(width: 48),
       ],
@@ -128,9 +201,18 @@ class RegisterTreeNamePageState extends State<RegisterTreeNamePage> {
               Container(
                 width: 132,
                 height: 132,
-                decoration: const BoxDecoration(gradient: LinearGradient(colors: [AppColors.primary, AppColors.brightLeafGreen]), shape: BoxShape.circle),
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [AppColors.primary, AppColors.brightLeafGreen],
+                  ),
+                  shape: BoxShape.circle,
+                ),
                 alignment: Alignment.center,
-                child: const Icon(Icons.park_rounded, size: 62, color: Colors.white),
+                child: const Icon(
+                  Icons.park_rounded,
+                  size: 62,
+                  color: Colors.white,
+                ),
               ),
               Positioned(
                 right: 0,
@@ -138,7 +220,10 @@ class RegisterTreeNamePageState extends State<RegisterTreeNamePage> {
                 child: Container(
                   width: 48,
                   height: 48,
-                  decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
+                  decoration: const BoxDecoration(
+                    color: Colors.white,
+                    shape: BoxShape.circle,
+                  ),
                   alignment: Alignment.center,
                   child: const Text('🌳', style: TextStyle(fontSize: 24)),
                 ),
@@ -147,23 +232,46 @@ class RegisterTreeNamePageState extends State<RegisterTreeNamePage> {
           ),
         ),
         const SizedBox(height: 20),
-        Text('Give Your Tree a Name', style: Style.headline28(context), textAlign: TextAlign.center),
+        Text(
+          'register_name_heading'.tr(),
+          style: Style.headline28(context),
+          textAlign: TextAlign.center,
+        ),
         const SizedBox(height: 4),
-        Text('Make it memorable and unique', style: Style.body14(context, color: AppColors.gray717171), textAlign: TextAlign.center),
+        Text(
+          'register_name_subheading'.tr(),
+          style: Style.body14(context, color: AppColors.gray717171),
+          textAlign: TextAlign.center,
+        ),
         const SizedBox(height: 18),
         TextField(
           controller: treeNameController,
           decoration: InputDecoration(
-            hintText: 'e.g., Grand Oak, Park Maple',
-            contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-            border: OutlineInputBorder(borderRadius: Style.border20, borderSide: const BorderSide(color: AppColors.grayE8E8E8, width: 2)),
-            focusedBorder: OutlineInputBorder(borderRadius: Style.border20, borderSide: const BorderSide(color: AppColors.primary, width: 2)),
+            hintText: 'register_name_hint'.tr(),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 14,
+              vertical: 14,
+            ),
+            border: OutlineInputBorder(
+              borderRadius: Style.border20,
+              borderSide: const BorderSide(
+                color: AppColors.grayE8E8E8,
+                width: 2,
+              ),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: Style.border20,
+              borderSide: const BorderSide(color: AppColors.primary, width: 2),
+            ),
             fillColor: Colors.white,
             filled: true,
           ),
         ),
         const SizedBox(height: 14),
-        Text('Suggestions:', style: Style.body12(context, color: AppColors.gray717171)),
+        Text(
+          'register_name_suggestions'.tr(),
+          style: Style.body12(context, color: AppColors.gray717171),
+        ),
         const SizedBox(height: 8),
         Wrap(
           spacing: 8,
@@ -173,9 +281,19 @@ class RegisterTreeNamePageState extends State<RegisterTreeNamePage> {
                 (item) => GestureDetector(
                   onTap: () => setState(() => treeNameController.text = item),
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                    decoration: BoxDecoration(color: Colors.white, borderRadius: Style.border20, border: Border.all(color: AppColors.grayE8E8E8)),
-                    child: Text(item, style: Style.body12(context, color: AppColors.secondary)),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 8,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: Style.border20,
+                      border: Border.all(color: AppColors.grayE8E8E8),
+                    ),
+                    child: Text(
+                      item,
+                      style: Style.body12(context, color: AppColors.secondary),
+                    ),
                   ),
                 ),
               )
@@ -192,7 +310,23 @@ class RegisterTreeNamePageState extends State<RegisterTreeNamePage> {
               shape: RoundedRectangleBorder(borderRadius: Style.border20),
               elevation: 0,
             ),
-            child: Text('Register Tree', style: Style.body18(context, color: Colors.white, weight: FontWeight.w600)),
+            child: isSubmitting
+                ? const SizedBox(
+                    width: 24,
+                    height: 24,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2.5,
+                      color: Colors.white,
+                    ),
+                  )
+                : Text(
+                    'register_tree_title'.tr(),
+                    style: Style.body18(
+                      context,
+                      color: Colors.white,
+                      weight: FontWeight.w600,
+                    ),
+                  ),
           ),
         ),
       ],
@@ -204,12 +338,20 @@ class RegisterTreeNamePageState extends State<RegisterTreeNamePage> {
     body: showSuccess
         ? successView()
         : Container(
-            decoration: const BoxDecoration(gradient: LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [AppColors.neutralLight, Color(0xFFE8F5E9), Color(0xFFC8E6C9)])),
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  AppColors.neutralLight,
+                  Color(0xFFE8F5E9),
+                  Color(0xFFC8E6C9),
+                ],
+              ),
+            ),
             child: SafeArea(
               bottom: false,
-              child: Column(
-                children: [topHeader(), namingForm()],
-              ),
+              child: Column(children: [topHeader(), namingForm()]),
             ),
           ),
   );

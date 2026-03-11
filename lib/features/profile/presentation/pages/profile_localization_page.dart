@@ -4,6 +4,8 @@ import 'package:go_router/go_router.dart';
 import 'package:kok_ai_app/assets/themes/app_colors.dart';
 import 'package:kok_ai_app/assets/themes/style.dart';
 import 'package:kok_ai_app/features/common/presentation/widgets/kok_card.dart';
+import 'package:kok_ai_app/features/profile/data/services/profile_api_service.dart';
+import 'package:kok_ai_app/injection_container.dart';
 
 class ProfileLocalizationPage extends StatefulWidget {
   const ProfileLocalizationPage({super.key});
@@ -14,6 +16,8 @@ class ProfileLocalizationPage extends StatefulWidget {
 }
 
 class ProfileLocalizationPageState extends State<ProfileLocalizationPage> {
+  final profileApiService = sl<ProfileApiService>();
+
   final localeItems = const [
     (Locale('en'), 'English', 'English'),
     (Locale('ru'), 'Русский', 'Russian'),
@@ -24,6 +28,9 @@ class ProfileLocalizationPageState extends State<ProfileLocalizationPage> {
 
   Future<void> onSelectLocale(Locale locale) async {
     await context.setLocale(locale);
+    try {
+      await profileApiService.updateLocalization(locale.languageCode);
+    } catch (_) {}
     if (!mounted) return;
     setState(() {});
   }
@@ -38,7 +45,12 @@ class ProfileLocalizationPageState extends State<ProfileLocalizationPage> {
           onPressed: () => context.pop(),
           icon: const Icon(Icons.arrow_back_rounded),
         ),
-        Expanded(child: Text('Localization', style: Style.title20(context))),
+        Expanded(
+          child: Text(
+            'settings_localization'.tr(),
+            style: Style.title20(context),
+          ),
+        ),
       ],
     ),
   );
