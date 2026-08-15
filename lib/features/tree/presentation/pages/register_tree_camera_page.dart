@@ -131,6 +131,15 @@ class RegisterTreeCameraPageState extends State<RegisterTreeCameraPage> {
     return draftStore.leavesImagePath;
   }
 
+  void onClosePage() {
+    if (context.canPop()) {
+      context.pop();
+      return;
+    }
+
+    context.go(dashboardRoute);
+  }
+
   /// --- Widgets ---
 
   Widget topHeader() => Container(
@@ -147,7 +156,7 @@ class RegisterTreeCameraPageState extends State<RegisterTreeCameraPage> {
         Row(
           children: [
             IconButton(
-              onPressed: () => context.go(dashboardRoute),
+              onPressed: onClosePage,
               icon: const Icon(Icons.close_rounded, color: Colors.white),
             ),
             Expanded(

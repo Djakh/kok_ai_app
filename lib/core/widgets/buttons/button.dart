@@ -73,12 +73,16 @@ class Button extends StatelessWidget {
 
   Widget content(BuildContext context) {
     final defaultColor =
-        textColor ?? (type == ButtonType.primary ? context.cs.onPrimary : context.cs.onSurface);
+        textColor ??
+        (type == ButtonType.primary
+            ? context.cs.onPrimary
+            : context.cs.onSurface);
 
     return child ??
         Text(
           text ?? '',
-          style: textStyle ?? Style.bodyw5(context).copyWith(color: defaultColor),
+          style:
+              textStyle ?? Style.bodyw5(context).copyWith(color: defaultColor),
           overflow: TextOverflow.ellipsis,
         );
   }
@@ -88,7 +92,9 @@ class Button extends StatelessWidget {
     style: ElevatedButton.styleFrom(
       minimumSize: Size(double.infinity, (height ?? 52).toDouble()),
       shape: RoundedRectangleBorder(borderRadius: Style.border32),
-      backgroundColor: isAvailable ? (color ?? context.cs.primary) : context.cs.tertiary,
+      backgroundColor: isAvailable
+          ? (color ?? context.cs.primary)
+          : context.cs.tertiary,
       foregroundColor: context.cs.onPrimary,
       elevation: 0,
     ),
@@ -100,8 +106,13 @@ class Button extends StatelessWidget {
     style: OutlinedButton.styleFrom(
       minimumSize: Size(double.infinity, (height ?? 52).toDouble()),
       shape: RoundedRectangleBorder(borderRadius: Style.border32),
-      side: BorderSide(color: borderColor ?? context.cs.surface, width: borderWidth ?? 1),
-      backgroundColor: isAvailable ? (color ?? AppColors.white) : AppColors.gray8D,
+      side: BorderSide(
+        color: borderColor ?? context.cs.surface,
+        width: borderWidth ?? 1,
+      ),
+      backgroundColor: isAvailable
+          ? (color ?? AppColors.white)
+          : AppColors.gray8D,
       foregroundColor: textColor ?? context.cs.primary,
     ),
     child: isLoading ? const ActivityIndicator() : content(context),

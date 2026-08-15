@@ -6,20 +6,28 @@ import 'package:geolocator/geolocator.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:kok_ai_app/assets/themes/app_colors.dart';
 import 'package:kok_ai_app/assets/themes/style.dart';
+import 'package:kok_ai_app/core/widgets/app_network_image.dart';
+import 'package:kok_ai_app/features/common/presentation/widgets/kok_card.dart';
+import 'package:kok_ai_app/features/social/data/models/api_social_post.dart';
 import 'package:kok_ai_app/features/social/data/models/social_post_payload.dart';
 import 'package:kok_ai_app/features/social/data/services/social_api_service.dart';
 import 'package:kok_ai_app/features/social/data/services/social_post_draft_store.dart';
-import 'package:kok_ai_app/features/common/presentation/widgets/kok_card.dart';
+import 'package:kok_ai_app/features/user/data/models/api_user.dart';
+import 'package:kok_ai_app/features/user/data/services/user_api_service.dart';
 import 'package:kok_ai_app/injection_container.dart';
 
 class SocialPostComment {
   const SocialPostComment({
+    required this.id,
+    required this.authorId,
     required this.user,
     required this.avatar,
     required this.text,
     required this.time,
   });
 
+  final String id;
+  final String authorId;
   final String user;
   final String avatar;
   final String text;
@@ -29,6 +37,7 @@ class SocialPostComment {
 class SocialPost {
   const SocialPost({
     required this.id,
+    required this.authorId,
     required this.user,
     required this.avatar,
     required this.title,
@@ -41,7 +50,8 @@ class SocialPost {
     required this.comments,
   });
 
-  final int id;
+  final String id;
+  final String authorId;
   final String user;
   final String avatar;
   final String title;
@@ -53,20 +63,24 @@ class SocialPost {
   final int likes;
   final List<SocialPostComment> comments;
 
-  SocialPost copyWith({int? likes, List<SocialPostComment>? comments}) =>
-      SocialPost(
-        id: id,
-        user: user,
-        avatar: avatar,
-        title: title,
-        time: time,
-        content: content,
-        image: image,
-        treeName: treeName,
-        treeLocation: treeLocation,
-        likes: likes ?? this.likes,
-        comments: comments ?? this.comments,
-      );
+  SocialPost copyWith({
+    String? content,
+    int? likes,
+    List<SocialPostComment>? comments,
+  }) => SocialPost(
+    id: id,
+    authorId: authorId,
+    user: user,
+    avatar: avatar,
+    title: title,
+    time: time,
+    content: content ?? this.content,
+    image: image,
+    treeName: treeName,
+    treeLocation: treeLocation,
+    likes: likes ?? this.likes,
+    comments: comments ?? this.comments,
+  );
 }
 
 class SocialPage extends StatefulWidget {
@@ -78,94 +92,32 @@ class SocialPage extends StatefulWidget {
 
 class SocialPageState extends State<SocialPage> {
   final newPostController = TextEditingController();
-  final commentControllerMap = <int, TextEditingController>{};
+  final commentControllerMap = <String, TextEditingController>{};
   final imagePicker = ImagePicker();
   final postDraftStore = sl<SocialPostDraftStore>();
   final socialApiService = sl<SocialApiService>();
+  final userApiService = sl<UserApiService>();
 
   bool showCreatePostSheet = false;
   bool isCreatingPost = false;
+  bool isLoadingPosts = true;
   String? draftImagePath;
   Position? draftPosition;
   SocialPostPayload? preparedPostPayload;
 
-  List<int> likedPostIds = [];
-  List<int> expandedPostIds = [];
-
-  List<SocialPost> posts = [
-    SocialPost(
-      id: 1,
-      user: 'Maria Garcia',
-      avatar: '🌟',
-      title: 'Tree Guardian • Level 4',
-      time: '2 hours ago',
-      content:
-          'Just registered my 50th tree! 🎉 Found this beautiful oak in Central Park. This app has changed how I see my city! #TreeGuardian #UrbanForest',
-      image: 'oak',
-      treeName: 'Grand Oak',
-      treeLocation: 'Central Park, NY',
-      likes: 42,
-      comments: [
-        const SocialPostComment(
-          user: 'John Smith',
-          avatar: '🌲',
-          text: 'Congratulations Maria! 🌳',
-          time: '1 hour ago',
-        ),
-        const SocialPostComment(
-          user: 'Emma Wilson',
-          avatar: '🌳',
-          text: 'Beautiful tree, I will look for it!',
-          time: '45 min ago',
-        ),
-      ],
-    ),
-    SocialPost(
-      id: 2,
-      user: 'Alex Chen',
-      avatar: '🍃',
-      title: 'Environmental Advocate',
-      time: '5 hours ago',
-      content:
-          'Completed the weekly challenge! Registered 10 trees across 3 neighborhoods. Let\'s keep our cities green! 🌿',
-      likes: 67,
-      comments: const [
-        SocialPostComment(
-          user: 'Sarah Chen',
-          avatar: '🌟',
-          text: 'Amazing work Alex!',
-          time: '4 hours ago',
-        ),
-      ],
-    ),
-    SocialPost(
-      id: 3,
-      user: 'Sarah Chen',
-      avatar: '🌟',
-      title: 'Top Guardian • Level 5',
-      time: '1 day ago',
-      content:
-          'Organized a community tree walk this weekend. 15 people joined and we registered 23 new trees together! 🚶‍♀️🌳',
-      image: 'community',
-      likes: 89,
-      comments: const [
-        SocialPostComment(
-          user: 'Mike Johnson',
-          avatar: '🌲',
-          text: 'Count me in next week!',
-          time: '1 day ago',
-        ),
-        SocialPostComment(
-          user: 'Emma Davis',
-          avatar: '🌿',
-          text: 'I\'d love to join too 🙋‍♀️',
-          time: '20 hours ago',
-        ),
-      ],
-    ),
-  ];
+  List<String> likedPostIds = [];
+  List<String> expandedPostIds = [];
+  List<SocialPost> posts = [];
+  final userCache = <String, ApiUser>{};
+  String? currentUserId;
 
   /// --- Life cycle ---
+
+  @override
+  void initState() {
+    super.initState();
+    initialize();
+  }
 
   @override
   void dispose() {
@@ -178,7 +130,106 @@ class SocialPageState extends State<SocialPage> {
 
   /// --- Methods ---
 
-  TextEditingController commentController(int postId) {
+  Future<void> initialize() async {
+    try {
+      final me = await userApiService.getMe();
+      currentUserId = me.id;
+      userCache[me.id] = me;
+    } catch (_) {
+      // The feed can still render if the current user endpoint is unavailable.
+    }
+    await loadPosts();
+  }
+
+  Future<void> loadPosts() async {
+    try {
+      final remotePosts = await socialApiService.listPosts(limit: 20);
+      final resolved = await Future.wait(remotePosts.map(buildUiPost));
+      if (!mounted) return;
+      setState(() {
+        posts = resolved;
+        isLoadingPosts = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => isLoadingPosts = false);
+    }
+  }
+
+  Future<SocialPost> buildUiPost(ApiSocialPost item) async {
+    final user = await getUser(item.authorId);
+    final likes = await socialApiService.listLikes(item.id);
+    final comments = await socialApiService.listComments(item.id);
+    if (currentUserId != null && likes.any(_likeBelongsToCurrentUser)) {
+      likedPostIds.add(item.id);
+    }
+
+    return SocialPost(
+      id: item.id,
+      authorId: item.authorId,
+      user: user?.fullName ?? user?.username ?? 'User',
+      avatar: avatarForUser(item.authorId),
+      title: user == null ? 'Tree Guardian' : '@${user.username}',
+      time: timeAgo(item.createdAt),
+      content: item.content,
+      image: item.imageUrl,
+      treeLocation: item.latitude == null || item.longitude == null
+          ? null
+          : '${item.latitude!.toStringAsFixed(4)}, ${item.longitude!.toStringAsFixed(4)}',
+      likes: likes.length,
+      comments: comments
+          .map(
+            (comment) => SocialPostComment(
+              id: comment.id,
+              authorId: comment.authorId,
+              user: comment.authorId == item.authorId
+                  ? (user?.fullName ?? 'User')
+                  : shortUser(comment.authorId),
+              avatar: avatarForUser(comment.authorId),
+              text: comment.content,
+              time: timeAgo(comment.createdAt),
+            ),
+          )
+          .toList(),
+    );
+  }
+
+  bool _likeBelongsToCurrentUser(dynamic value) {
+    if (value is! Map) return false;
+    final owner = value['user_id'] ?? value['author_id'];
+    return '$owner' == currentUserId;
+  }
+
+  Future<ApiUser?> getUser(String userId) async {
+    if (userCache.containsKey(userId)) return userCache[userId];
+    try {
+      final user = await userApiService.getUser(userId);
+      userCache[userId] = user;
+      return user;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  String avatarForUser(String seed) {
+    const avatars = ['🌳', '🌲', '🍃', '🌿', '🌱'];
+    return avatars[seed.codeUnits.fold<int>(0, (value, item) => value + item) %
+        avatars.length];
+  }
+
+  String shortUser(String userId) =>
+      'User ${userId.substring(0, userId.length < 4 ? userId.length : 4)}';
+
+  String timeAgo(DateTime? date) {
+    if (date == null) return '-';
+    final difference = DateTime.now().difference(date.toLocal());
+    if (difference.inMinutes < 1) return 'Just now';
+    if (difference.inHours < 1) return '${difference.inMinutes} min ago';
+    if (difference.inDays < 1) return '${difference.inHours} hours ago';
+    return '${difference.inDays} days ago';
+  }
+
+  TextEditingController commentController(String postId) {
     final current = commentControllerMap[postId];
     if (current != null) return current;
 
@@ -187,49 +238,93 @@ class SocialPageState extends State<SocialPage> {
     return created;
   }
 
-  void onToggleLike(int postId) {
+  Future<void> onToggleLike(String postId) async {
     final exists = likedPostIds.contains(postId);
+    if (exists) {
+      await socialApiService.unlikePost(postId);
+    } else {
+      await socialApiService.likePost(postId);
+    }
+
     setState(() {
-      if (exists) {
-        likedPostIds = likedPostIds.where((item) => item != postId).toList();
-      } else {
-        likedPostIds = [...likedPostIds, postId];
-      }
+      likedPostIds = exists
+          ? likedPostIds.where((item) => item != postId).toList()
+          : [...likedPostIds, postId];
+      posts = posts
+          .map(
+            (post) => post.id == postId
+                ? post.copyWith(
+                    likes: exists
+                        ? (post.likes - 1).clamp(0, 999999)
+                        : post.likes + 1,
+                  )
+                : post,
+          )
+          .toList();
     });
   }
 
-  void onToggleComments(int postId) {
+  Future<void> onToggleComments(String postId) async {
     final exists = expandedPostIds.contains(postId);
-    setState(() {
-      if (exists) {
-        expandedPostIds = expandedPostIds
-            .where((item) => item != postId)
+    if (!exists) {
+      final comments = await socialApiService.listComments(postId);
+      setState(() {
+        posts = posts
+            .map(
+              (post) => post.id == postId
+                  ? post.copyWith(
+                      comments: comments
+                          .map(
+                            (item) => SocialPostComment(
+                              id: item.id,
+                              authorId: item.authorId,
+                              user: shortUser(item.authorId),
+                              avatar: avatarForUser(item.authorId),
+                              text: item.content,
+                              time: timeAgo(item.createdAt),
+                            ),
+                          )
+                          .toList(),
+                    )
+                  : post,
+            )
             .toList();
-      } else {
-        expandedPostIds = [...expandedPostIds, postId];
-      }
+      });
+    }
+    setState(() {
+      expandedPostIds = exists
+          ? expandedPostIds.where((item) => item != postId).toList()
+          : [...expandedPostIds, postId];
     });
   }
 
-  void onAddComment(int postId) {
+  Future<void> onAddComment(String postId) async {
     final controller = commentController(postId);
     final text = controller.text.trim();
     if (text.isEmpty) return;
 
+    await socialApiService.createComment(postId, text);
+    final comments = await socialApiService.listComments(postId);
+    if (!mounted) return;
     setState(() {
       posts = posts
           .map(
             (post) => post.id == postId
                 ? post.copyWith(
-                    comments: [
-                      ...post.comments,
-                      SocialPostComment(
-                        user: 'You',
-                        avatar: '🍃',
-                        text: text,
-                        time: 'Just now',
-                      ),
-                    ],
+                    comments: comments
+                        .map(
+                          (item) => SocialPostComment(
+                            id: item.id,
+                            authorId: item.authorId,
+                            user: item.authorId == currentUserId
+                                ? 'You'
+                                : shortUser(item.authorId),
+                            avatar: avatarForUser(item.authorId),
+                            text: item.content,
+                            time: timeAgo(item.createdAt),
+                          ),
+                        )
+                        .toList(),
                   )
                 : post,
           )
@@ -275,31 +370,35 @@ class SocialPageState extends State<SocialPage> {
 
     setState(() => isCreatingPost = true);
 
-    await captureDraftLocation();
-
-    preparedPostPayload = postDraftStore.preparePayload(
-      content: text,
-      imagePath: draftImagePath,
-      latitude: draftPosition?.latitude,
-      longitude: draftPosition?.longitude,
-    );
-
-    final newPost = SocialPost(
-      id: posts.length + 1,
-      user: 'You',
-      avatar: '🍃',
-      title: 'Tree Guardian',
-      time: 'Just now',
-      content: text,
-      image: draftImagePath,
-      treeLocation: draftPosition == null
-          ? null
-          : '${draftPosition!.latitude.toStringAsFixed(6)}, ${draftPosition!.longitude.toStringAsFixed(6)}',
-      likes: 0,
-      comments: const [],
-    );
-
     try {
+      final existingPayload = preparedPostPayload;
+      if (existingPayload == null ||
+          existingPayload.content != text ||
+          existingPayload.imagePath != draftImagePath) {
+        preparedPostPayload = postDraftStore.preparePayload(
+          content: text,
+          imagePath: draftImagePath,
+          latitude: draftPosition?.latitude,
+          longitude: draftPosition?.longitude,
+        );
+      }
+
+      final newPost = SocialPost(
+        id: 'local-${DateTime.now().millisecondsSinceEpoch}',
+        authorId: currentUserId ?? '',
+        user: 'You',
+        avatar: '🍃',
+        title: 'Tree Guardian',
+        time: 'Just now',
+        content: text,
+        image: draftImagePath,
+        treeLocation: draftPosition == null
+            ? null
+            : '${draftPosition!.latitude.toStringAsFixed(6)}, ${draftPosition!.longitude.toStringAsFixed(6)}',
+        likes: 0,
+        comments: const [],
+      );
+
       await socialApiService.createPost(preparedPostPayload!);
       if (!mounted) return;
 
@@ -308,10 +407,13 @@ class SocialPageState extends State<SocialPage> {
         newPostController.clear();
         draftImagePath = null;
         draftPosition = null;
+        preparedPostPayload = null;
         showCreatePostSheet = false;
         isCreatingPost = false;
       });
 
+      await loadPosts();
+      if (!mounted) return;
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text('social_payload_ready'.tr())));
@@ -322,6 +424,89 @@ class SocialPageState extends State<SocialPage> {
         context,
       ).showSnackBar(SnackBar(content: Text('$error')));
     }
+  }
+
+  Future<void> onEditPost(SocialPost post) async {
+    final latest = await socialApiService.getPost(post.id);
+    if (!mounted) return;
+    final controller = TextEditingController(text: latest.content);
+    final content = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Edit post'),
+        content: TextField(
+          controller: controller,
+          maxLength: 2000,
+          maxLines: 5,
+          autofocus: true,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, controller.text.trim()),
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
+    controller.dispose();
+    if (content == null || content.isEmpty || content == latest.content) return;
+    final updated = await socialApiService.updatePost(post.id, content);
+    if (!mounted) return;
+    setState(() {
+      posts = posts
+          .map(
+            (item) => item.id == post.id
+                ? item.copyWith(content: updated.content)
+                : item,
+          )
+          .toList();
+    });
+  }
+
+  Future<void> onDeletePost(SocialPost post) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete post?'),
+        content: const Text('This removes the post from the community feed.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    await socialApiService.deletePost(post.id);
+    if (!mounted) return;
+    setState(() => posts.removeWhere((item) => item.id == post.id));
+  }
+
+  Future<void> onDeleteComment(String postId, SocialPostComment comment) async {
+    await socialApiService.deleteComment(comment.id);
+    if (!mounted) return;
+    setState(() {
+      posts = posts
+          .map(
+            (post) => post.id == postId
+                ? post.copyWith(
+                    comments: post.comments
+                        .where((item) => item.id != comment.id)
+                        .toList(),
+                  )
+                : post,
+          )
+          .toList();
+    });
   }
 
   /// --- Widgets ---
@@ -357,6 +542,9 @@ class SocialPageState extends State<SocialPage> {
       ],
     ),
   );
+
+  Widget loadingBody() =>
+      const Expanded(child: Center(child: CircularProgressIndicator()));
 
   Widget createPostSheet() => Positioned.fill(
     child: Material(
@@ -491,6 +679,17 @@ class SocialPageState extends State<SocialPage> {
                       style: Style.body14(context),
                     ),
                   ),
+                  IconButton(
+                    onPressed: isCreatingPost ? null : captureDraftLocation,
+                    tooltip: draftPosition == null
+                        ? 'Add location'
+                        : 'Location added',
+                    icon: Icon(
+                      draftPosition == null
+                          ? Icons.add_location_alt_outlined
+                          : Icons.location_on_rounded,
+                    ),
+                  ),
                   const Spacer(),
                   ElevatedButton(
                     onPressed: isCreatingPost ? null : () => onCreatePost(),
@@ -590,6 +789,18 @@ class SocialPageState extends State<SocialPage> {
                         ],
                       ),
                     ),
+                    if (post.authorId == currentUserId)
+                      PopupMenuButton<String>(
+                        tooltip: 'Post actions',
+                        onSelected: (value) {
+                          if (value == 'edit') onEditPost(post);
+                          if (value == 'delete') onDeletePost(post);
+                        },
+                        itemBuilder: (context) => const [
+                          PopupMenuItem(value: 'edit', child: Text('Edit')),
+                          PopupMenuItem(value: 'delete', child: Text('Delete')),
+                        ],
+                      ),
                   ],
                 ),
                 const SizedBox(height: 12),
@@ -608,7 +819,27 @@ class SocialPageState extends State<SocialPage> {
               child: Stack(
                 children: [
                   Positioned.fill(
-                    child: post.image != null && File(post.image!).existsSync()
+                    child: post.image == null
+                        ? const Center(
+                            child: Icon(
+                              Icons.park_rounded,
+                              color: AppColors.primary,
+                              size: 72,
+                            ),
+                          )
+                        : post.image!.startsWith('http')
+                        ? AppNetworkImage(
+                            imageUrl: post.image,
+                            fit: BoxFit.cover,
+                            fallback: const Center(
+                              child: Icon(
+                                Icons.park_rounded,
+                                color: AppColors.primary,
+                                size: 72,
+                              ),
+                            ),
+                          )
+                        : File(post.image!).existsSync()
                         ? Image.file(File(post.image!), fit: BoxFit.cover)
                         : const Center(
                             child: Icon(
@@ -672,7 +903,7 @@ class SocialPageState extends State<SocialPage> {
                 Row(
                   children: [
                     Text(
-                      '${post.likes + (isLiked ? 1 : 0)} likes',
+                      '${post.likes} likes',
                       style: Style.body12(context, color: AppColors.gray717171),
                     ),
                     const Spacer(),
@@ -778,6 +1009,15 @@ class SocialPageState extends State<SocialPage> {
                               ],
                             ),
                           ),
+                          if (item.authorId == currentUserId)
+                            IconButton(
+                              tooltip: 'Delete comment',
+                              onPressed: () => onDeleteComment(post.id, item),
+                              icon: const Icon(
+                                Icons.delete_outline_rounded,
+                                size: 19,
+                              ),
+                            ),
                         ],
                       ),
                     ),
@@ -865,15 +1105,18 @@ class SocialPageState extends State<SocialPage> {
           Column(
             children: [
               header(),
-              Expanded(
-                child: ListView.separated(
-                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 92),
-                  itemBuilder: (context, index) => postCard(posts[index]),
-                  separatorBuilder: (context, index) =>
-                      const SizedBox(height: 10),
-                  itemCount: posts.length,
+              if (isLoadingPosts)
+                loadingBody()
+              else
+                Expanded(
+                  child: ListView.separated(
+                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 92),
+                    itemBuilder: (context, index) => postCard(posts[index]),
+                    separatorBuilder: (context, index) =>
+                        const SizedBox(height: 10),
+                    itemCount: posts.length,
+                  ),
                 ),
-              ),
             ],
           ),
           if (showCreatePostSheet) createPostSheet(),

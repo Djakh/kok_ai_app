@@ -22,21 +22,24 @@ class OnboardingPageState extends State<OnboardingPage> {
   List<SlideModel> get slides => [
     SlideModel(
       title: 'Speak Fearlessly'.tr(),
-      description: 'Chat with your AI tutor anytime, anywhere. No judgment, just practice.',
+      description:
+          'Chat with your AI tutor anytime, anywhere. No judgment, just practice.',
       icon: Icons.record_voice_over_rounded,
       background: AppColors.green49,
       accent: AppColors.green50,
     ),
     SlideModel(
       title: 'Micro-learning'.tr(),
-      description: 'Master new words and grammar with quick, bite-sized exercises every day.',
+      description:
+          'Master new words and grammar with quick, bite-sized exercises every day.',
       icon: Icons.auto_stories_rounded,
       background: AppColors.purpleC3,
       accent: AppColors.purpleD6,
     ),
     SlideModel(
       title: 'See Your Growth'.tr(),
-      description: 'Get instant feedback and track your progress with clear milestones.',
+      description:
+          'Get instant feedback and track your progress with clear milestones.',
       icon: Icons.insights_rounded,
       background: AppColors.orange13,
       accent: AppColors.orange12,
@@ -59,7 +62,10 @@ class OnboardingPageState extends State<OnboardingPage> {
 
   void onContinue() {
     if (pageIndex < slides.length - 1) {
-      pageController.nextPage(duration: const Duration(milliseconds: 350), curve: Curves.easeOutCubic);
+      pageController.nextPage(
+        duration: const Duration(milliseconds: 350),
+        curve: Curves.easeOutCubic,
+      );
       return;
     }
     goToHome();
@@ -84,7 +90,10 @@ class OnboardingPageState extends State<OnboardingPage> {
 
   TextButton skipButton() => TextButton(
     onPressed: goToHome,
-    child: Text('Skip'.tr(), style: Style.small3w4(context, color: TextColorRole.whiteColor)),
+    child: Text(
+      'Skip'.tr(),
+      style: Style.small3w4(context, color: TextColorRole.whiteColor),
+    ),
   );
 
   Widget get pageView => PageView.builder(
@@ -104,7 +113,12 @@ class OnboardingPageState extends State<OnboardingPage> {
     body: Stack(
       children: [
         pageView,
-        Positioned(left: 24, right: 24, top: 12, child: SafeArea(bottom: false, child: header)),
+        Positioned(
+          left: 24,
+          right: 24,
+          top: 12,
+          child: SafeArea(bottom: false, child: header),
+        ),
         Positioned(
           left: 24,
           right: 24,

@@ -2,8 +2,15 @@
 
 This document is for Flutter/mobile/frontend engineers integrating with the KOK.AI backend.
 
+> **Backend implementation notice (2026-08-15):** This is a legacy frontend guide. For the current tree-registration flow and the Kindwise Plant.id v3 boundary, implement `docs/KOKAI_BACKEND_KINDWISE_IMPLEMENTATION_SPEC.md` together with `docs/KOKAI_MOBILE_BACKEND_CONTRACT.md`. Where they differ from this file, those two documents take precedence.
+
 Base URL (local):
 - `http://localhost:8000`
+
+Mobile note:
+- Android emulator should use `http://10.0.2.2:8000/api/v1`
+- Physical devices must use your computer/server LAN IP, for example `http://192.168.1.50:8000/api/v1`
+- APK builds can be pointed at that server with `--dart-define=API_BASE_URL=http://192.168.1.50:8000/api/v1`
 
 API prefix:
 - `/api/v1`

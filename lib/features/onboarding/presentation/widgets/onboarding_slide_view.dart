@@ -11,7 +11,11 @@ class OnboardingSlideView extends StatelessWidget {
   /// --- Widgets ---
 
   Widget get iconView => Center(
-    child: Icon(slide.icon, size: 220, color: Colors.white.withValues(alpha: 0.95)),
+    child: Icon(
+      slide.icon,
+      size: 220,
+      color: Colors.white.withValues(alpha: 0.95),
+    ),
   );
 
   Widget view(BuildContext context) => SafeArea(
@@ -43,7 +47,9 @@ class OnboardingSlideView extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Stack(
     children: [
-      Positioned.fill(child: Backdrop(background: slide.background, accent: slide.accent)),
+      Positioned.fill(
+        child: Backdrop(background: slide.background, accent: slide.accent),
+      ),
       view(context),
     ],
   );

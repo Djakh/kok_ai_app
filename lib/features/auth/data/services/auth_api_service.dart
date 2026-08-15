@@ -1,5 +1,6 @@
 import 'package:kok_ai_app/core/network/api_client.dart';
 import 'package:kok_ai_app/core/network/auth_token_store.dart';
+import 'package:kok_ai_app/features/user/data/models/api_user.dart';
 
 class AuthApiService {
   const AuthApiService({required this.apiClient, required this.tokenStore});
@@ -35,19 +36,33 @@ class AuthApiService {
 
   Future<void> logout() async {
     final refreshToken = await tokenStore.readRefreshToken();
-    if (refreshToken != null && refreshToken.isNotEmpty) {
-      await apiClient.post(
-        '/auth/logout',
-        body: {'refresh_token': refreshToken},
-      );
+    try {
+      if (refreshToken != null && refreshToken.isNotEmpty) {
+        await apiClient.post(
+          '/auth/logout',
+          body: {'refresh_token': refreshToken},
+        );
+      }
+    } finally {
+      await tokenStore.clearTokens();
     }
-    await tokenStore.clearTokens();
+  }
+
+  Future<void> refresh() async {
+    await apiClient.refreshSession();
+  }
+
+  Future<ApiUser> getCurrentUser() async {
+    final data = await apiClient.get('/auth/me');
+    return ApiUser.fromJson(Map<String, dynamic>.from(data as Map));
   }
 
   Future<void> saveTokensFromData(Map<String, dynamic> data) async {
     final accessToken = '${data['access_token'] ?? ''}';
     final refreshToken = '${data['refresh_token'] ?? ''}';
-    if (accessToken.isEmpty || refreshToken.isEmpty) return;
+    if (accessToken.isEmpty || refreshToken.isEmpty) {
+      throw const FormatException('Authentication response omitted tokens');
+    }
     await tokenStore.saveTokens(
       accessToken: accessToken,
       refreshToken: refreshToken,

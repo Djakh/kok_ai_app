@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:kok_ai_app/assets/themes/app_colors.dart';
 import 'package:kok_ai_app/assets/themes/style.dart';
+import 'package:kok_ai_app/features/user/data/services/user_api_service.dart';
+import 'package:kok_ai_app/injection_container.dart';
 
 class ProfileEditPage extends StatefulWidget {
   const ProfileEditPage({super.key});
@@ -12,35 +14,67 @@ class ProfileEditPage extends StatefulWidget {
 }
 
 class ProfileEditPageState extends State<ProfileEditPage> {
-  final nameController = TextEditingController(text: 'Sarah Chen');
-  final userNameController = TextEditingController(text: 'sarah.green');
-  final bioController = TextEditingController(
-    text: 'Tree guardian and city forest volunteer.',
-  );
-  final locationController = TextEditingController(text: 'New York, USA');
-  final websiteController = TextEditingController(
-    text: 'kok.ai/guardians/sarah',
-  );
+  final userApiService = sl<UserApiService>();
+  final nameController = TextEditingController();
+  final userNameController = TextEditingController();
+  final bioController = TextEditingController();
+  bool isLoading = true;
+  bool isSaving = false;
 
   /// --- Life cycle ---
+
+  @override
+  void initState() {
+    super.initState();
+    loadUser();
+  }
 
   @override
   void dispose() {
     nameController.dispose();
     userNameController.dispose();
     bioController.dispose();
-    locationController.dispose();
-    websiteController.dispose();
     super.dispose();
   }
 
   /// --- Methods ---
 
-  void onSaveProfile() {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text('edit_profile_saved'.tr())));
-    context.pop();
+  Future<void> loadUser() async {
+    try {
+      final user = await userApiService.getMe();
+      if (!mounted) return;
+      nameController.text = user.fullName ?? '';
+      userNameController.text = user.username;
+      bioController.text = user.bio ?? '';
+      setState(() => isLoading = false);
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => isLoading = false);
+    }
+  }
+
+  Future<void> onSaveProfile() async {
+    if (isSaving) return;
+    setState(() => isSaving = true);
+
+    try {
+      await userApiService.updateMe(
+        fullName: nameController.text.trim(),
+        bio: bioController.text.trim(),
+      );
+      if (!mounted) return;
+      setState(() => isSaving = false);
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('edit_profile_saved'.tr())));
+      context.pop();
+    } catch (error) {
+      if (!mounted) return;
+      setState(() => isSaving = false);
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('$error')));
+    }
   }
 
   /// --- Widgets ---
@@ -68,11 +102,13 @@ class ProfileEditPageState extends State<ProfileEditPage> {
     required String label,
     required TextEditingController controller,
     int maxLines = 1,
+    bool readOnly = false,
   }) => Padding(
     padding: const EdgeInsets.only(bottom: 12),
     child: TextField(
       controller: controller,
       maxLines: maxLines,
+      readOnly: readOnly,
       decoration: InputDecoration(
         labelText: label,
         labelStyle: Style.body12(context, color: AppColors.gray717171),
@@ -141,14 +177,23 @@ class ProfileEditPageState extends State<ProfileEditPage> {
         elevation: 0,
         shape: RoundedRectangleBorder(borderRadius: Style.border16),
       ),
-      child: Text(
-        'edit_profile_save_changes'.tr(),
-        style: Style.body16(
-          context,
-          color: Colors.white,
-          weight: FontWeight.w700,
-        ),
-      ),
+      child: isSaving
+          ? const SizedBox(
+              width: 24,
+              height: 24,
+              child: CircularProgressIndicator(
+                strokeWidth: 2.5,
+                color: Colors.white,
+              ),
+            )
+          : Text(
+              'edit_profile_save_changes'.tr(),
+              style: Style.body16(
+                context,
+                color: Colors.white,
+                weight: FontWeight.w700,
+              ),
+            ),
     ),
   );
 
@@ -156,43 +201,36 @@ class ProfileEditPageState extends State<ProfileEditPage> {
   Widget build(BuildContext context) => Scaffold(
     backgroundColor: AppColors.neutralLight,
     body: SafeArea(
-      child: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-        children: [
-          header(context),
-          const SizedBox(height: 8),
-          avatarBox(context),
-          const SizedBox(height: 18),
-          textFieldBox(
-            context: context,
-            label: 'edit_profile_name'.tr(),
-            controller: nameController,
-          ),
-          textFieldBox(
-            context: context,
-            label: 'edit_profile_username'.tr(),
-            controller: userNameController,
-          ),
-          textFieldBox(
-            context: context,
-            label: 'edit_profile_bio'.tr(),
-            controller: bioController,
-            maxLines: 3,
-          ),
-          textFieldBox(
-            context: context,
-            label: 'edit_profile_location'.tr(),
-            controller: locationController,
-          ),
-          textFieldBox(
-            context: context,
-            label: 'edit_profile_website'.tr(),
-            controller: websiteController,
-          ),
-          const SizedBox(height: 12),
-          saveButton(context),
-        ],
-      ),
+      child: isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : ListView(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+              children: [
+                header(context),
+                const SizedBox(height: 8),
+                avatarBox(context),
+                const SizedBox(height: 18),
+                textFieldBox(
+                  context: context,
+                  label: 'edit_profile_name'.tr(),
+                  controller: nameController,
+                ),
+                textFieldBox(
+                  context: context,
+                  label: 'edit_profile_username'.tr(),
+                  controller: userNameController,
+                  readOnly: true,
+                ),
+                textFieldBox(
+                  context: context,
+                  label: 'edit_profile_bio'.tr(),
+                  controller: bioController,
+                  maxLines: 3,
+                ),
+                const SizedBox(height: 12),
+                saveButton(context),
+              ],
+            ),
     ),
   );
 }

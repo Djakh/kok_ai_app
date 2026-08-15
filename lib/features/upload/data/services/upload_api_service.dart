@@ -35,4 +35,9 @@ class UploadApiService {
     final list = List<Map<String, dynamic>>.from(data as List);
     return list.map(UploadedAsset.fromJson).toList();
   }
+
+  Future<UploadedAsset> getUpload(String uploadId) async {
+    final data = await apiClient.get('/uploads/$uploadId');
+    return UploadedAsset.fromJson(Map<String, dynamic>.from(data as Map));
+  }
 }

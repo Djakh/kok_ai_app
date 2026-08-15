@@ -117,6 +117,15 @@ class RegisterTreeLocationPageState extends State<RegisterTreeLocationPage> {
     }
   }
 
+  void onClosePage() {
+    if (context.canPop()) {
+      context.pop();
+      return;
+    }
+
+    context.go(dashboardRoute);
+  }
+
   /// --- Widgets ---
 
   Widget topHeader() => Padding(
@@ -124,7 +133,7 @@ class RegisterTreeLocationPageState extends State<RegisterTreeLocationPage> {
     child: Row(
       children: [
         IconButton(
-          onPressed: () => context.go(dashboardRoute),
+          onPressed: onClosePage,
           icon: const Icon(Icons.close_rounded, color: Colors.white),
         ),
         Expanded(

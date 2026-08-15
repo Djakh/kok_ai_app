@@ -13,7 +13,9 @@ extension BuildContextExt on BuildContext {
 
   bool get isDarkMode => theme.brightness == Brightness.dark;
 
-  ScaffoldFeatureController<SnackBar, SnackBarClosedReason> Function(SnackBar snackBar)
+  ScaffoldFeatureController<SnackBar, SnackBarClosedReason> Function(
+    SnackBar snackBar,
+  )
   get showSnackBar => ScaffoldMessenger.of(this).showSnackBar;
 
   void fieldFocusChange(FocusNode? currentFocus, FocusNode? nextFocus) {

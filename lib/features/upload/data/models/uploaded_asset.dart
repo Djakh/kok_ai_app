@@ -1,3 +1,5 @@
+import 'package:kok_ai_app/core/network/api_config.dart';
+
 class UploadedAsset {
   const UploadedAsset({
     required this.id,
@@ -16,10 +18,10 @@ class UploadedAsset {
   final DateTime createdAt;
 
   factory UploadedAsset.fromJson(Map<String, dynamic> json) => UploadedAsset(
-    id: '${json['id']}',
-    url: '${json['url']}',
-    contentType: '${json['content_type']}',
-    fileName: '${json['file_name']}',
+    id: '${json['id'] ?? ''}',
+    url: ApiConfig.normalizeAssetUrl(json['url'] as String?) ?? '',
+    contentType: '${json['content_type'] ?? ''}',
+    fileName: '${json['file_name'] ?? ''}',
     fileSize: (json['file_size'] as num?)?.toInt() ?? 0,
     createdAt: DateTime.tryParse('${json['created_at']}') ?? DateTime.now(),
   );

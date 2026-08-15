@@ -40,7 +40,15 @@ class KokTabSwitcher extends StatelessWidget {
   Widget build(BuildContext context) => Container(
     height: 52,
     padding: const EdgeInsets.all(4),
-    decoration: BoxDecoration(color: Colors.white, borderRadius: Style.border12),
-    child: Row(children: List.generate(tabs.length, (index) => tabButton(context, index))),
+    decoration: BoxDecoration(
+      color: Colors.white,
+      borderRadius: Style.border12,
+    ),
+    child: Row(
+      children: List.generate(
+        tabs.length,
+        (index) => tabButton(context, index),
+      ),
+    ),
   );
 }

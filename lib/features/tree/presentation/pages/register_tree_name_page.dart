@@ -91,6 +91,15 @@ class RegisterTreeNamePageState extends State<RegisterTreeNamePage> {
     }
   }
 
+  void onClosePage() {
+    if (context.canPop()) {
+      context.pop();
+      return;
+    }
+
+    context.go(dashboardRoute);
+  }
+
   /// --- Widgets ---
 
   Widget successView() => Container(
@@ -175,7 +184,7 @@ class RegisterTreeNamePageState extends State<RegisterTreeNamePage> {
     child: Row(
       children: [
         IconButton(
-          onPressed: () => context.go(dashboardRoute),
+          onPressed: onClosePage,
           icon: const Icon(Icons.close_rounded, color: AppColors.secondary),
         ),
         Expanded(

@@ -6,12 +6,18 @@ class Style {
   Style.internal();
 
   static BorderRadius get border8 => const BorderRadius.all(Radius.circular(8));
-  static BorderRadius get border12 => const BorderRadius.all(Radius.circular(12));
-  static BorderRadius get border16 => const BorderRadius.all(Radius.circular(16));
-  static BorderRadius get border20 => const BorderRadius.all(Radius.circular(20));
-  static BorderRadius get border24 => const BorderRadius.all(Radius.circular(24));
-  static BorderRadius get border28 => const BorderRadius.all(Radius.circular(28));
-  static BorderRadius get border32 => const BorderRadius.all(Radius.circular(32));
+  static BorderRadius get border12 =>
+      const BorderRadius.all(Radius.circular(12));
+  static BorderRadius get border16 =>
+      const BorderRadius.all(Radius.circular(16));
+  static BorderRadius get border20 =>
+      const BorderRadius.all(Radius.circular(20));
+  static BorderRadius get border24 =>
+      const BorderRadius.all(Radius.circular(24));
+  static BorderRadius get border28 =>
+      const BorderRadius.all(Radius.circular(28));
+  static BorderRadius get border32 =>
+      const BorderRadius.all(Radius.circular(32));
 
   static const EdgeInsets paddingAll12 = EdgeInsets.all(12);
   static const EdgeInsets paddingAll16 = EdgeInsets.all(16);
@@ -47,29 +53,32 @@ class Style {
     }
   }
 
-  static TextStyle headline32(BuildContext context, {Color? color}) => TextStyle(
-    fontFamily: fontFamily,
-    fontSize: 32,
-    fontWeight: FontWeight.w700,
-    height: 1.25,
-    color: color ?? Theme.of(context).colorScheme.onSurface,
-  );
+  static TextStyle headline32(BuildContext context, {Color? color}) =>
+      TextStyle(
+        fontFamily: fontFamily,
+        fontSize: 32,
+        fontWeight: FontWeight.w700,
+        height: 1.25,
+        color: color ?? Theme.of(context).colorScheme.onSurface,
+      );
 
-  static TextStyle headline28(BuildContext context, {Color? color}) => TextStyle(
-    fontFamily: fontFamily,
-    fontSize: 28,
-    fontWeight: FontWeight.w700,
-    height: 1.25,
-    color: color ?? Theme.of(context).colorScheme.onSurface,
-  );
+  static TextStyle headline28(BuildContext context, {Color? color}) =>
+      TextStyle(
+        fontFamily: fontFamily,
+        fontSize: 28,
+        fontWeight: FontWeight.w700,
+        height: 1.25,
+        color: color ?? Theme.of(context).colorScheme.onSurface,
+      );
 
-  static TextStyle headline24(BuildContext context, {Color? color}) => TextStyle(
-    fontFamily: fontFamily,
-    fontSize: 24,
-    fontWeight: FontWeight.w700,
-    height: 1.25,
-    color: color ?? Theme.of(context).colorScheme.onSurface,
-  );
+  static TextStyle headline24(BuildContext context, {Color? color}) =>
+      TextStyle(
+        fontFamily: fontFamily,
+        fontSize: 24,
+        fontWeight: FontWeight.w700,
+        height: 1.25,
+        color: color ?? Theme.of(context).colorScheme.onSurface,
+      );
 
   static TextStyle title20(BuildContext context, {Color? color}) => TextStyle(
     fontFamily: fontFamily,
@@ -79,47 +88,85 @@ class Style {
     color: color ?? Theme.of(context).colorScheme.onSurface,
   );
 
-  static TextStyle body18(BuildContext context, {Color? color, FontWeight weight = FontWeight.w500}) =>
-      TextStyle(
-        fontFamily: fontFamily,
-        fontSize: 18,
-        fontWeight: weight,
-        height: 1.35,
-        color: color ?? Theme.of(context).colorScheme.onSurface,
-      );
+  static TextStyle body18(
+    BuildContext context, {
+    Color? color,
+    FontWeight weight = FontWeight.w500,
+  }) => TextStyle(
+    fontFamily: fontFamily,
+    fontSize: 18,
+    fontWeight: weight,
+    height: 1.35,
+    color: color ?? Theme.of(context).colorScheme.onSurface,
+  );
 
-  static TextStyle body16(BuildContext context, {Color? color, FontWeight weight = FontWeight.w500}) =>
-      TextStyle(
-        fontFamily: fontFamily,
-        fontSize: 16,
-        fontWeight: weight,
-        height: 1.35,
-        color: color ?? Theme.of(context).colorScheme.onSurface,
-      );
+  static TextStyle body16(
+    BuildContext context, {
+    Color? color,
+    FontWeight weight = FontWeight.w500,
+  }) => TextStyle(
+    fontFamily: fontFamily,
+    fontSize: 16,
+    fontWeight: weight,
+    height: 1.35,
+    color: color ?? Theme.of(context).colorScheme.onSurface,
+  );
 
-  static TextStyle body14(BuildContext context, {Color? color, FontWeight weight = FontWeight.w400}) =>
-      TextStyle(
-        fontFamily: fontFamily,
-        fontSize: 14,
-        fontWeight: weight,
-        height: 1.35,
-        color: color ?? Theme.of(context).colorScheme.onSurface,
-      );
+  static TextStyle body14(
+    BuildContext context, {
+    Color? color,
+    FontWeight weight = FontWeight.w400,
+  }) => TextStyle(
+    fontFamily: fontFamily,
+    fontSize: 14,
+    fontWeight: weight,
+    height: 1.35,
+    color: color ?? Theme.of(context).colorScheme.onSurface,
+  );
 
-  static TextStyle body12(BuildContext context, {Color? color, FontWeight weight = FontWeight.w500}) =>
-      TextStyle(
-        fontFamily: fontFamily,
-        fontSize: 12,
-        fontWeight: weight,
-        height: 1.35,
-        color: color ?? Theme.of(context).colorScheme.onSurface,
-      );
+  static TextStyle body12(
+    BuildContext context, {
+    Color? color,
+    FontWeight weight = FontWeight.w500,
+  }) => TextStyle(
+    fontFamily: fontFamily,
+    fontSize: 12,
+    fontWeight: weight,
+    height: 1.35,
+    color: color ?? Theme.of(context).colorScheme.onSurface,
+  );
 
   // Compatibility aliases for existing project files
-  static TextStyle headlinew7(BuildContext context, {TextColorRole? color}) => headline24(context, color: textColor(context, color));
-  static TextStyle body2w5(BuildContext context, {TextColorRole? color}) => body18(context, color: textColor(context, color), weight: FontWeight.w500);
-  static TextStyle bodyw5(BuildContext context, {TextColorRole? color}) => body16(context, color: textColor(context, color), weight: FontWeight.w500);
-  static TextStyle bodyw4(BuildContext context, {TextColorRole? color}) => body16(context, color: textColor(context, color), weight: FontWeight.w400);
-  static TextStyle small3w4(BuildContext context, {TextColorRole? color}) => body14(context, color: textColor(context, color), weight: FontWeight.w400);
-  static TextStyle small2w5(BuildContext context, {TextColorRole? color}) => body12(context, color: textColor(context, color), weight: FontWeight.w500);
+  static TextStyle headlinew7(BuildContext context, {TextColorRole? color}) =>
+      headline24(context, color: textColor(context, color));
+  static TextStyle body2w5(BuildContext context, {TextColorRole? color}) =>
+      body18(
+        context,
+        color: textColor(context, color),
+        weight: FontWeight.w500,
+      );
+  static TextStyle bodyw5(BuildContext context, {TextColorRole? color}) =>
+      body16(
+        context,
+        color: textColor(context, color),
+        weight: FontWeight.w500,
+      );
+  static TextStyle bodyw4(BuildContext context, {TextColorRole? color}) =>
+      body16(
+        context,
+        color: textColor(context, color),
+        weight: FontWeight.w400,
+      );
+  static TextStyle small3w4(BuildContext context, {TextColorRole? color}) =>
+      body14(
+        context,
+        color: textColor(context, color),
+        weight: FontWeight.w400,
+      );
+  static TextStyle small2w5(BuildContext context, {TextColorRole? color}) =>
+      body12(
+        context,
+        color: textColor(context, color),
+        weight: FontWeight.w500,
+      );
 }

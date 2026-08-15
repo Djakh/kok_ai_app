@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:kok_ai_app/assets/themes/app_colors.dart';
 import 'package:kok_ai_app/assets/themes/style.dart';
+import 'package:kok_ai_app/core/network/api_exception.dart';
+import 'package:kok_ai_app/core/network/auth_token_store.dart';
+import 'package:kok_ai_app/core/widgets/kok_ai_logo.dart';
 import 'package:kok_ai_app/features/auth/data/services/auth_api_service.dart';
 import 'package:kok_ai_app/features/common/presentation/widgets/kok_gradient_background.dart';
 import 'package:kok_ai_app/injection_container.dart';
@@ -16,6 +19,7 @@ class RegisterPage extends StatefulWidget {
 
 class RegisterPageState extends State<RegisterPage> {
   final nameController = TextEditingController();
+  final usernameController = TextEditingController();
   final emailController = TextEditingController();
   final passwordController = TextEditingController();
   final confirmPasswordController = TextEditingController();
@@ -27,6 +31,7 @@ class RegisterPageState extends State<RegisterPage> {
   @override
   void dispose() {
     nameController.dispose();
+    usernameController.dispose();
     emailController.dispose();
     passwordController.dispose();
     confirmPasswordController.dispose();
@@ -45,15 +50,34 @@ class RegisterPageState extends State<RegisterPage> {
     }
 
     final fullName = nameController.text.trim();
+    final username = usernameController.text.trim();
     final email = emailController.text.trim();
     final password = passwordController.text;
     if (fullName.isEmpty || email.isEmpty || password.isEmpty) return;
+    if (username.length < 3 || username.length > 50) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Username must be 3–50 characters.')),
+      );
+      return;
+    }
+    if (password.length < 8 ||
+        !RegExp('[A-Za-z]').hasMatch(password) ||
+        !RegExp('[0-9]').hasMatch(password)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Password must be at least 8 characters with a letter and digit.',
+          ),
+        ),
+      );
+      return;
+    }
 
     setState(() => isSubmitting = true);
     try {
       await authApiService.register(
         email: email,
-        username: email.split('@').first,
+        username: username,
         password: password,
         fullName: fullName,
       );
@@ -63,9 +87,16 @@ class RegisterPageState extends State<RegisterPage> {
     } catch (error) {
       if (!mounted) return;
       setState(() => isSubmitting = false);
+      final message = switch (error) {
+        AuthStorageUnavailableException() =>
+          'Secure sign-in could not be saved. Please try again.',
+        ApiException() => error.message,
+        _ =>
+          'Your account could not be created. Check the details and try again.',
+      };
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text('$error')));
+      ).showSnackBar(SnackBar(content: Text(message)));
     }
   }
 
@@ -74,14 +105,15 @@ class RegisterPageState extends State<RegisterPage> {
   Widget header() => Column(
     children: [
       Container(
-        width: 80,
-        height: 80,
+        width: 88,
+        height: 88,
+        padding: const EdgeInsets.all(7),
         decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.2),
+          color: Colors.white.withValues(alpha: 0.96),
           shape: BoxShape.circle,
         ),
         alignment: Alignment.center,
-        child: const Icon(Icons.park_rounded, color: Colors.white, size: 40),
+        child: const KokAiLogo(size: 74),
       ),
       const SizedBox(height: 12),
       Text(
@@ -154,8 +186,14 @@ class RegisterPageState extends State<RegisterPage> {
       const SizedBox(height: 12),
       inputField(
         controller: emailController,
-        hintText: 'Email or phone',
+        hintText: 'Email',
         icon: Icons.mail_outline_rounded,
+      ),
+      const SizedBox(height: 12),
+      inputField(
+        controller: usernameController,
+        hintText: 'Username',
+        icon: Icons.alternate_email_rounded,
       ),
       const SizedBox(height: 12),
       inputField(

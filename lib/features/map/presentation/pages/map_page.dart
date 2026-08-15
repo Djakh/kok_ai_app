@@ -1,454 +1,403 @@
-import 'dart:ui' as ui;
-
-import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'package:kok_ai_app/assets/themes/app_colors.dart';
-import 'package:kok_ai_app/assets/themes/style.dart';
+import 'package:kok_ai_app/assets/themes/design_tokens.dart';
+import 'package:kok_ai_app/features/tree_registration/domain/entities/tree_models.dart';
+import 'package:kok_ai_app/features/tree_registration/domain/repositories/tree_repository.dart';
+import 'package:kok_ai_app/injection_container.dart';
 import 'package:kok_ai_app/router.dart';
-
-enum MapTreeStatus { healthy, needsAttention, unknown }
-
-class MapTreePoint {
-  const MapTreePoint({
-    required this.id,
-    required this.name,
-    required this.position,
-    required this.status,
-  });
-
-  final String id;
-  final String name;
-  final LatLng position;
-  final MapTreeStatus status;
-}
 
 class MapPage extends StatefulWidget {
   const MapPage({super.key});
-
   @override
-  State<MapPage> createState() => MapPageState();
+  State<MapPage> createState() => _MapPageState();
 }
 
-class MapPageState extends State<MapPage> {
-  final searchController = TextEditingController();
-
-  GoogleMapController? mapController;
-  BitmapDescriptor? healthyTreeIcon;
-  BitmapDescriptor? warningTreeIcon;
-  BitmapDescriptor? unknownTreeIcon;
-  bool myLocationEnabled = false;
-
-  final points = const [
-    MapTreePoint(
-      id: '1',
-      name: 'Central Oak',
-      position: LatLng(40.7829, -73.9654),
-      status: MapTreeStatus.healthy,
-    ),
-    MapTreePoint(
-      id: '2',
-      name: 'Park Maple',
-      position: LatLng(40.7749, -73.9558),
-      status: MapTreeStatus.needsAttention,
-    ),
-    MapTreePoint(
-      id: '3',
-      name: 'Grand Willow',
-      position: LatLng(40.7589, -73.9851),
-      status: MapTreeStatus.healthy,
-    ),
-    MapTreePoint(
-      id: '4',
-      name: 'Street Birch',
-      position: LatLng(40.7614, -73.9776),
-      status: MapTreeStatus.healthy,
-    ),
-    MapTreePoint(
-      id: '5',
-      name: 'Unknown Tree',
-      position: LatLng(40.7580, -73.9855),
-      status: MapTreeStatus.unknown,
-    ),
-  ];
-
-  /// --- Life cycle ---
+class _MapPageState extends State<MapPage> {
+  static const _defaultCenter = LatLng(41.2995, 69.2401);
+  final TreeRepository _repository = sl();
+  GoogleMapController? _controller;
+  List<TreeRecord> _trees = [];
+  TreeRecord? _selected;
+  Position? _position;
+  bool _loading = true;
+  String? _error;
+  bool _permissionDenied = false;
+  bool _permissionDeniedForever = false;
 
   @override
   void initState() {
     super.initState();
-    initializeMapAssets();
-    initializeLocationAccess();
+    _loadTrees();
+    _readExistingLocationAccess();
   }
 
   @override
   void dispose() {
-    searchController.dispose();
-    mapController?.dispose();
+    _controller?.dispose();
     super.dispose();
   }
 
-  /// --- Methods ---
-
-  Future<void> initializeMapAssets() async {
-    healthyTreeIcon = await createTreeMarkerIcon(const Color(0xFF4CAF50), '🌳');
-    warningTreeIcon = await createTreeMarkerIcon(const Color(0xFFB67A3C), '🌲');
-    unknownTreeIcon = await createTreeMarkerIcon(const Color(0xFF78909C), '🌿');
-    if (!mounted) return;
-    setState(() {});
+  Future<void> _loadTrees() async {
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+    try {
+      final center = _position == null
+          ? _defaultCenter
+          : LatLng(_position!.latitude, _position!.longitude);
+      final trees = await _repository.getMapTrees(
+        TreeMapQuery(
+          center: '${center.latitude},${center.longitude}',
+          radius: 50000,
+        ),
+      );
+      if (!mounted) return;
+      setState(() {
+        _trees = trees.where((tree) {
+          final point = tree.location;
+          return point.latitude >= -90 &&
+              point.latitude <= 90 &&
+              point.longitude >= -180 &&
+              point.longitude <= 180 &&
+              !(point.latitude == 0 && point.longitude == 0);
+        }).toList();
+        _loading = false;
+      });
+      if (_trees.isNotEmpty) {
+        _controller?.animateCamera(
+          CameraUpdate.newLatLng(
+            LatLng(
+              _trees.first.location.latitude,
+              _trees.first.location.longitude,
+            ),
+          ),
+        );
+      }
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _loading = false;
+        _error = 'Registered trees could not be loaded.';
+      });
+    }
   }
 
-  Future<void> initializeLocationAccess() async {
-    final allowed = await ensureLocationPermission();
-    if (!mounted) return;
-    setState(() => myLocationEnabled = allowed);
+  Future<void> _readExistingLocationAccess() async {
+    final permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.always ||
+        permission == LocationPermission.whileInUse) {
+      await _locate(requestPermission: false);
+    }
   }
 
-  Future<bool> ensureLocationPermission() async {
-    final enabled = await Geolocator.isLocationServiceEnabled();
-    if (!enabled) return false;
-
+  Future<void> _locate({bool requestPermission = true}) async {
+    if (!await Geolocator.isLocationServiceEnabled()) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Location services are disabled.'),
+            action: SnackBarAction(
+              label: 'Settings',
+              onPressed: Geolocator.openLocationSettings,
+            ),
+          ),
+        );
+      }
+      return;
+    }
     var permission = await Geolocator.checkPermission();
-    if (permission == LocationPermission.denied) {
+    if (requestPermission && permission == LocationPermission.denied) {
       permission = await Geolocator.requestPermission();
     }
-
-    if (permission == LocationPermission.denied ||
-        permission == LocationPermission.deniedForever) {
-      return false;
+    if (permission == LocationPermission.deniedForever) {
+      setState(() => _permissionDeniedForever = true);
+      return;
     }
-
-    return true;
+    if (permission == LocationPermission.denied) {
+      setState(() => _permissionDenied = true);
+      return;
+    }
+    try {
+      final position = await Geolocator.getCurrentPosition(
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.best,
+        ),
+      );
+      if (!mounted) return;
+      setState(() {
+        _position = position;
+        _permissionDenied = false;
+        _permissionDeniedForever = false;
+      });
+      await _controller?.animateCamera(
+        CameraUpdate.newLatLngZoom(
+          LatLng(position.latitude, position.longitude),
+          16,
+        ),
+      );
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Current position is unavailable.')),
+        );
+      }
+    }
   }
 
-  double markerHue(MapTreeStatus status) {
-    if (status == MapTreeStatus.healthy) {
-      return BitmapDescriptor.hueGreen;
-    }
-    if (status == MapTreeStatus.needsAttention) {
-      return BitmapDescriptor.hueOrange;
-    }
-    return BitmapDescriptor.hueAzure;
-  }
-
-  Future<BitmapDescriptor> createTreeMarkerIcon(
-    Color backgroundColor,
-    String emoji,
-  ) async {
-    const size = 140.0;
-    final recorder = ui.PictureRecorder();
-    final canvas = Canvas(recorder);
-    final fillPaint = Paint()..color = backgroundColor;
-    final borderPaint = Paint()
-      ..color = Colors.white
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 8;
-
-    canvas.drawCircle(const Offset(size / 2, size / 2), 46, fillPaint);
-    canvas.drawCircle(const Offset(size / 2, size / 2), 46, borderPaint);
-
-    final textPainter = TextPainter(
-      text: TextSpan(text: emoji, style: const TextStyle(fontSize: 50)),
-      textDirection: ui.TextDirection.ltr,
-    );
-    textPainter.layout();
-    textPainter.paint(
-      canvas,
-      Offset((size - textPainter.width) / 2, (size - textPainter.height) / 2),
-    );
-
-    final image = await recorder.endRecording().toImage(
-      size.toInt(),
-      size.toInt(),
-    );
-    final bytes = await image.toByteData(format: ui.ImageByteFormat.png);
-    return BitmapDescriptor.bytes(bytes!.buffer.asUint8List());
-  }
-
-  BitmapDescriptor iconByStatus(MapTreeStatus status) {
-    if (status == MapTreeStatus.healthy) {
-      return healthyTreeIcon ??
-          BitmapDescriptor.defaultMarkerWithHue(markerHue(status));
-    }
-    if (status == MapTreeStatus.needsAttention) {
-      return warningTreeIcon ??
-          BitmapDescriptor.defaultMarkerWithHue(markerHue(status));
-    }
-    return unknownTreeIcon ??
-        BitmapDescriptor.defaultMarkerWithHue(markerHue(status));
-  }
-
-  Set<Marker> buildMarkers() => points
+  Set<Marker> get _markers => _trees
       .map(
-        (item) => Marker(
-          markerId: MarkerId(item.id),
-          position: item.position,
-          infoWindow: InfoWindow(title: item.name, snippet: item.status.name),
-          icon: iconByStatus(item.status),
-          onTap: () => context.push('/app/tree/${item.id}'),
+        (tree) => Marker(
+          markerId: MarkerId(tree.id),
+          position: LatLng(tree.location.latitude, tree.location.longitude),
+          icon: BitmapDescriptor.defaultMarkerWithHue(
+            BitmapDescriptor.hueGreen,
+          ),
+          onTap: () => setState(() => _selected = tree),
+          infoWindow: InfoWindow(
+            title: tree.displayName,
+            snippet:
+                'Recorded ±${tree.location.horizontalAccuracyMeters.toStringAsFixed(1)} m',
+          ),
         ),
       )
       .toSet();
 
-  Future<void> onRecenter() async {
-    final allowed = await ensureLocationPermission();
-    if (!allowed) {
-      mapController?.animateCamera(
-        CameraUpdate.newLatLng(const LatLng(40.7829, -73.9654)),
-      );
-      return;
-    }
-
-    if (!myLocationEnabled) {
-      setState(() => myLocationEnabled = true);
-    }
-
-    final currentPosition = await Geolocator.getCurrentPosition(
-      locationSettings: const LocationSettings(accuracy: LocationAccuracy.best),
-    );
-    mapController?.animateCamera(
-      CameraUpdate.newLatLngZoom(
-        LatLng(currentPosition.latitude, currentPosition.longitude),
-        15.2,
+  Set<Circle> get _circles {
+    final position = _position;
+    if (position == null || position.accuracy <= 0) return {};
+    return {
+      Circle(
+        circleId: const CircleId('current-accuracy'),
+        center: LatLng(position.latitude, position.longitude),
+        radius: position.accuracy,
+        fillColor: Colors.blue.withValues(alpha: .12),
+        strokeColor: Colors.blue,
+        strokeWidth: 1,
       ),
-    );
+    };
   }
 
-  /// --- Widgets ---
-
-  Widget searchBar() => Container(
-    margin: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-    padding: const EdgeInsets.all(10),
-    decoration: BoxDecoration(
-      color: Colors.white,
-      borderRadius: Style.border16,
-      boxShadow: const [
-        BoxShadow(
-          color: Color(0x12000000),
-          blurRadius: 10,
-          offset: Offset(0, 4),
-        ),
-      ],
-    ),
-    child: Row(
+  @override
+  Widget build(BuildContext context) => Scaffold(
+    body: Stack(
       children: [
-        Expanded(
-          child: Container(
-            height: 42,
-            padding: Style.paddingH12,
-            decoration: BoxDecoration(
-              color: AppColors.neutralLight,
-              borderRadius: Style.border12,
-            ),
+        GoogleMap(
+          initialCameraPosition: const CameraPosition(
+            target: _defaultCenter,
+            zoom: 12.5,
+          ),
+          onMapCreated: (controller) => _controller = controller,
+          markers: _markers,
+          circles: _circles,
+          myLocationEnabled: _position != null,
+          myLocationButtonEnabled: false,
+          zoomControlsEnabled: false,
+          onTap: (_) => setState(() => _selected = null),
+        ),
+        SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
             child: Row(
               children: [
-                const Icon(
-                  Icons.search_rounded,
-                  size: 20,
-                  color: AppColors.gray717171,
-                ),
-                const SizedBox(width: 8),
                 Expanded(
-                  child: TextField(
-                    controller: searchController,
-                    decoration: InputDecoration(
-                      border: InputBorder.none,
-                      hintText: 'map_search_trees'.tr(),
+                  child: Material(
+                    color: KokTokens.surface,
+                    borderRadius: BorderRadius.circular(16),
+                    child: const Padding(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 13,
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(Icons.map_outlined, color: KokTokens.forest),
+                          SizedBox(width: 10),
+                          Text(
+                            'Registered trees',
+                            style: TextStyle(fontWeight: FontWeight.w800),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
+                ),
+                const SizedBox(width: 8),
+                FloatingActionButton.small(
+                  heroTag: 'map-refresh',
+                  onPressed: _loadTrees,
+                  backgroundColor: KokTokens.surface,
+                  foregroundColor: KokTokens.forest,
+                  child: const Icon(Icons.refresh_rounded),
                 ),
               ],
             ),
           ),
         ),
-        const SizedBox(width: 8),
-        Container(
-          width: 42,
-          height: 42,
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: Style.border12,
-            border: Border.all(color: AppColors.grayE8E8E8),
+        if (_permissionDenied || _permissionDeniedForever)
+          Positioned(
+            top: 86,
+            left: 16,
+            right: 16,
+            child: SafeArea(
+              child: Material(
+                color: KokTokens.warningContainer,
+                borderRadius: BorderRadius.circular(14),
+                child: Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: Row(
+                    children: [
+                      const Icon(
+                        Icons.location_disabled_outlined,
+                        color: KokTokens.warning,
+                      ),
+                      const SizedBox(width: 8),
+                      const Expanded(
+                        child: Text(
+                          'Your position is hidden. Registered trees remain available.',
+                        ),
+                      ),
+                      if (_permissionDeniedForever)
+                        TextButton(
+                          onPressed: Geolocator.openAppSettings,
+                          child: const Text('Settings'),
+                        ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
           ),
-          child: const Icon(
-            Icons.tune_rounded,
-            size: 20,
-            color: AppColors.gray717171,
+        if (_loading)
+          const Center(child: CircularProgressIndicator())
+        else if (_error != null)
+          Center(
+            child: Card(
+              margin: const EdgeInsets.all(28),
+              child: Padding(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.cloud_off_outlined, size: 38),
+                    const SizedBox(height: 10),
+                    Text(_error!),
+                    TextButton(
+                      onPressed: _loadTrees,
+                      child: const Text('Retry'),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          )
+        else if (_trees.isEmpty)
+          Center(
+            child: Card(
+              margin: const EdgeInsets.all(28),
+              child: Padding(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(
+                      Icons.park_outlined,
+                      size: 44,
+                      color: KokTokens.leaf,
+                    ),
+                    const SizedBox(height: 10),
+                    const Text(
+                      'No trees on this map yet',
+                      style: TextStyle(fontWeight: FontWeight.w800),
+                    ),
+                    const SizedBox(height: 10),
+                    ElevatedButton(
+                      onPressed: () => context.push(registerTreeRoute),
+                      child: const Text('Register a tree'),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        Positioned(
+          right: 16,
+          bottom: _selected == null ? 20 : 160,
+          child: Column(
+            children: [
+              FloatingActionButton.small(
+                heroTag: 'map-add',
+                onPressed: () => context.push(registerTreeRoute),
+                backgroundColor: KokTokens.forest,
+                foregroundColor: Colors.white,
+                child: const Icon(Icons.add_rounded),
+              ),
+              const SizedBox(height: 8),
+              FloatingActionButton(
+                heroTag: 'map-locate',
+                onPressed: _locate,
+                backgroundColor: KokTokens.surface,
+                foregroundColor: KokTokens.forest,
+                child: const Icon(Icons.my_location_rounded),
+              ),
+            ],
           ),
         ),
+        if (_selected != null)
+          Positioned(
+            left: 16,
+            right: 16,
+            bottom: 18,
+            child: _TreePreview(tree: _selected!),
+          ),
       ],
     ),
   );
+}
 
-  Widget legendCard() => Container(
-    margin: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-    decoration: BoxDecoration(
-      color: Colors.white,
-      borderRadius: Style.border12,
-      boxShadow: const [
-        BoxShadow(
-          color: Color(0x10000000),
-          blurRadius: 8,
-          offset: Offset(0, 3),
-        ),
-      ],
-    ),
-    child: Row(
-      mainAxisAlignment: MainAxisAlignment.spaceAround,
-      children: [
-        legendItem('map_healthy'.tr(), AppColors.primary),
-        legendItem('map_needs_attention'.tr(), AppColors.warmEarthBrown),
-        legendItem('map_unknown'.tr(), AppColors.grayA0A0A0),
-      ],
-    ),
-  );
+class _TreePreview extends StatelessWidget {
+  const _TreePreview({required this.tree});
+  final TreeRecord tree;
 
-  Widget legendItem(String title, Color color) => Row(
-    children: [
-      Container(
-        width: 10,
-        height: 10,
-        decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-      ),
-      const SizedBox(width: 4),
-      Text(title, style: Style.body12(context, color: AppColors.gray717171)),
-    ],
-  );
-
-  Widget mapStatsCard() => Positioned(
-    left: 16,
-    right: 16,
-    bottom: 16,
-    child: Container(
-      padding: Style.paddingAll16,
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.95),
-        borderRadius: Style.border20,
-      ),
+  @override
+  Widget build(BuildContext context) => Card(
+    child: Padding(
+      padding: const EdgeInsets.all(16),
       child: Row(
         children: [
+          Container(
+            width: 50,
+            height: 50,
+            decoration: BoxDecoration(
+              color: KokTokens.forestContainer,
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: const Icon(Icons.park_rounded, color: KokTokens.forest),
+          ),
+          const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'map_trees_nearby'.tr(),
-                  style: Style.body12(context, color: AppColors.gray717171),
+                  tree.displayName,
+                  style: const TextStyle(fontWeight: FontWeight.w800),
                 ),
                 Text(
-                  '${points.length}',
-                  style: Style.headline28(context, color: AppColors.primary),
+                  tree.scientificName ?? 'Identification uncertain',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(color: KokTokens.inkMuted),
                 ),
               ],
             ),
           ),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Text(
-                  'map_in_your_area'.tr(),
-                  style: Style.body12(context, color: AppColors.gray717171),
-                ),
-                Text(
-                  '45',
-                  style: Style.headline28(
-                    context,
-                    color: AppColors.warmEarthBrown,
-                  ),
-                ),
-              ],
-            ),
+          TextButton(
+            onPressed: () => context.push('/app/tree/${tree.id}'),
+            child: const Text('Details'),
           ),
-        ],
-      ),
-    ),
-  );
-
-  Widget recenterButton() => Positioned(
-    right: 16,
-    top: 130,
-    child: GestureDetector(
-      onTap: onRecenter,
-      child: Container(
-        width: 46,
-        height: 46,
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          shape: BoxShape.circle,
-          boxShadow: [
-            BoxShadow(
-              color: Color(0x1F000000),
-              blurRadius: 8,
-              offset: Offset(0, 3),
-            ),
-          ],
-        ),
-        child: const Icon(
-          Icons.navigation_rounded,
-          color: AppColors.primary,
-          size: 22,
-        ),
-      ),
-    ),
-  );
-
-  Widget registerTreeFab() => Positioned(
-    right: 20,
-    bottom: 98,
-    child: GestureDetector(
-      onTap: () => context.push(registerTreeCameraRoute),
-      child: Container(
-        width: 64,
-        height: 64,
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            colors: [AppColors.primary, AppColors.brightLeafGreen],
-          ),
-          shape: BoxShape.circle,
-          boxShadow: [
-            BoxShadow(
-              color: Color(0x33000000),
-              blurRadius: 16,
-              offset: Offset(0, 8),
-            ),
-          ],
-        ),
-        child: const Icon(Icons.park_rounded, color: Colors.white, size: 30),
-      ),
-    ),
-  );
-
-  @override
-  Widget build(BuildContext context) => Scaffold(
-    body: SafeArea(
-      bottom: false,
-      child: Stack(
-        children: [
-          GoogleMap(
-            initialCameraPosition: const CameraPosition(
-              target: LatLng(40.7829, -73.9654),
-              zoom: 12.8,
-            ),
-            markers: buildMarkers(),
-            myLocationEnabled: myLocationEnabled,
-            myLocationButtonEnabled: myLocationEnabled,
-            zoomControlsEnabled: false,
-            mapToolbarEnabled: false,
-            onMapCreated: (controller) => mapController = controller,
-          ),
-          Positioned(
-            left: 0,
-            right: 0,
-            top: 0,
-            child: Column(children: [searchBar(), legendCard()]),
-          ),
-          recenterButton(),
-          mapStatsCard(),
-          registerTreeFab(),
         ],
       ),
     ),

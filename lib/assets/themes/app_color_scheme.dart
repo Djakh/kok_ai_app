@@ -1,18 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:kok_ai_app/assets/themes/app_colors.dart';
+import 'package:kok_ai_app/assets/themes/design_tokens.dart';
 
 class AppColorScheme {
   static const ColorScheme light = ColorScheme(
     brightness: Brightness.light,
-    primary: AppColors.primary,
+    primary: KokTokens.forest,
     onPrimary: AppColors.white,
-    secondary: AppColors.warmEarthBrown,
+    secondary: KokTokens.leaf,
     onSecondary: AppColors.white,
-    secondaryContainer: AppColors.grayE8E8E8,
-    surface: AppColors.neutralLight,
-    onSurface: AppColors.secondary,
+    secondaryContainer: KokTokens.forestContainer,
+    surface: KokTokens.canvas,
+    onSurface: KokTokens.ink,
     tertiary: AppColors.white,
-    onTertiary: AppColors.gray717171,
+    onTertiary: KokTokens.inkMuted,
     error: AppColors.error,
     onError: AppColors.white,
   );

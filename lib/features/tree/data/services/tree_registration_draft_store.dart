@@ -15,7 +15,9 @@ class TreeRegistrationDraftStore {
   TreeRegistrationPayload? lastPreparedPayload;
 
   bool get hasAllImages =>
-      frontImagePath != null && trunkImagePath != null && leavesImagePath != null;
+      frontImagePath != null &&
+      trunkImagePath != null &&
+      leavesImagePath != null;
 
   bool get hasLocation => latitude != null && longitude != null;
 

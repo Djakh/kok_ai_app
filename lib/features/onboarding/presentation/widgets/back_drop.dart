@@ -26,9 +26,21 @@ class Backdrop extends StatelessWidget {
     decoration: BoxDecoration(color: background),
     child: Stack(
       children: [
-        Positioned(top: -160, left: -120, child: circleLayer(260, accent.withValues(alpha: 0.22))),
-        Positioned(top: 120, right: -140, child: circleLayer(330, accent.withValues(alpha: 0.2))),
-        Positioned(bottom: -140, left: -90, child: circleLayer(280, accent.withValues(alpha: 0.16))),
+        Positioned(
+          top: -160,
+          left: -120,
+          child: circleLayer(260, accent.withValues(alpha: 0.22)),
+        ),
+        Positioned(
+          top: 120,
+          right: -140,
+          child: circleLayer(330, accent.withValues(alpha: 0.2)),
+        ),
+        Positioned(
+          bottom: -140,
+          left: -90,
+          child: circleLayer(280, accent.withValues(alpha: 0.16)),
+        ),
       ],
     ),
   );

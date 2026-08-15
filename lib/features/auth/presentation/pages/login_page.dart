@@ -1,7 +1,13 @@
+import 'dart:async';
+
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:kok_ai_app/assets/themes/app_colors.dart';
 import 'package:kok_ai_app/assets/themes/style.dart';
+import 'package:kok_ai_app/core/network/api_exception.dart';
+import 'package:kok_ai_app/core/network/auth_token_store.dart';
+import 'package:kok_ai_app/core/widgets/kok_ai_logo.dart';
 import 'package:kok_ai_app/features/auth/data/services/auth_api_service.dart';
 import 'package:kok_ai_app/features/common/presentation/widgets/kok_gradient_background.dart';
 import 'package:kok_ai_app/injection_container.dart';
@@ -19,11 +25,14 @@ class LoginPageState extends State<LoginPage> {
   final passwordController = TextEditingController();
   final authApiService = sl<AuthApiService>();
   bool isSubmitting = false;
+  int logoTapCount = 0;
+  Timer? logoTapResetTimer;
 
   /// --- Life cycle ---
 
   @override
   void dispose() {
+    logoTapResetTimer?.cancel();
     emailController.dispose();
     passwordController.dispose();
     super.dispose();
@@ -46,37 +55,97 @@ class LoginPageState extends State<LoginPage> {
     } catch (error) {
       if (!mounted) return;
       setState(() => isSubmitting = false);
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('$error')));
+      _showError(_authMessage(error));
     }
+  }
+
+  Future<void> onLogoTap() async {
+    if (!kDebugMode || isSubmitting) return;
+
+    logoTapResetTimer?.cancel();
+    logoTapCount += 1;
+
+    if (logoTapCount < 6) {
+      logoTapResetTimer = Timer(const Duration(seconds: 3), () {
+        logoTapCount = 0;
+      });
+      return;
+    }
+
+    logoTapCount = 0;
+    setState(() => isSubmitting = true);
+    try {
+      debugPrint(
+        '[AUTH DEBUG] Six-tap static login activated. '
+        'No /auth/login API request is made.',
+      );
+      await authApiService.tokenStore.saveTokens(
+        accessToken: AuthTokenStore.debugAccessToken,
+        refreshToken: AuthTokenStore.debugRefreshToken,
+      );
+      if (!mounted) return;
+      setState(() => isSubmitting = false);
+      context.go(dashboardRoute);
+    } catch (error) {
+      if (!mounted) return;
+      setState(() => isSubmitting = false);
+      _showError(_authMessage(error));
+    }
+  }
+
+  void _showError(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
+  }
+
+  String _authMessage(Object error) {
+    if (error is AuthStorageUnavailableException) {
+      return 'Secure sign-in could not be saved. Please try again.';
+    }
+    if (error is ApiException) return error.message;
+    return 'Sign-in could not be completed. Check your connection and try again.';
   }
 
   /// --- Widgets ---
 
-  Widget logo() => Column(
-    children: [
-      Container(
-        width: 96,
-        height: 96,
-        decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.2),
-          shape: BoxShape.circle,
+  Widget logo() => GestureDetector(
+    key: const Key('debug-login-logo'),
+    behavior: HitTestBehavior.opaque,
+    onTap: onLogoTap,
+    child: Column(
+      children: [
+        Container(
+          width: 112,
+          height: 112,
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.96),
+            shape: BoxShape.circle,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.12),
+                blurRadius: 24,
+                offset: const Offset(0, 10),
+              ),
+            ],
+          ),
+          alignment: Alignment.center,
+          child: const KokAiLogo(size: 96),
         ),
-        alignment: Alignment.center,
-        child: const Icon(Icons.park_rounded, color: Colors.white, size: 48),
-      ),
-      const SizedBox(height: 16),
-      Text('KOK.AI', style: Style.headline32(context, color: Colors.white)),
-      const SizedBox(height: 6),
-      Text(
-        'Protect Urban Trees',
-        style: Style.body18(
-          context,
-          color: Colors.white.withValues(alpha: 0.92),
+        const SizedBox(height: 16),
+        Text('KOK.AI', style: Style.headline32(context, color: Colors.white)),
+        const SizedBox(height: 6),
+        Text(
+          'Protect Urban Trees',
+          style: Style.body18(
+            context,
+            color: Colors.white.withValues(alpha: 0.92),
+          ),
         ),
-      ),
-    ],
+      ],
+    ),
   );
 
   Widget inputField({
@@ -113,7 +182,7 @@ class LoginPageState extends State<LoginPage> {
     children: [
       inputField(
         controller: emailController,
-        hintText: 'Email or phone',
+        hintText: 'Email',
         icon: Icons.mail_outline_rounded,
       ),
       const SizedBox(height: 14),
