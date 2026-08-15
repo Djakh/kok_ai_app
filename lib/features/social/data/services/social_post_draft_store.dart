@@ -9,12 +9,14 @@ class SocialPostDraftStore {
     required double? latitude,
     required double? longitude,
   }) {
+    final now = DateTime.now();
     final payload = SocialPostPayload(
       content: content,
       imagePath: imagePath,
       latitude: latitude,
       longitude: longitude,
-      createdAt: DateTime.now(),
+      createdAt: now,
+      idempotencyKey: 'social-post-${now.microsecondsSinceEpoch}',
     );
 
     lastPreparedPayload = payload;

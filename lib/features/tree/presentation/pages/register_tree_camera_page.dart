@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:camera/camera.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:kok_ai_app/assets/themes/app_colors.dart';
@@ -64,7 +65,11 @@ class RegisterTreeCameraPageState extends State<RegisterTreeCameraPage> {
         orElse: () => cameraList.first,
       );
 
-      final controller = CameraController(selected, ResolutionPreset.high, enableAudio: false);
+      final controller = CameraController(
+        selected,
+        ResolutionPreset.high,
+        enableAudio: false,
+      );
       await controller.initialize();
 
       if (!mounted) {
@@ -114,7 +119,9 @@ class RegisterTreeCameraPageState extends State<RegisterTreeCameraPage> {
     } catch (error) {
       if (!mounted) return;
       setState(() => isCapturing = false);
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Capture error: $error')));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Capture error: $error')));
     }
   }
 
@@ -124,19 +131,45 @@ class RegisterTreeCameraPageState extends State<RegisterTreeCameraPage> {
     return draftStore.leavesImagePath;
   }
 
+  void onClosePage() {
+    if (context.canPop()) {
+      context.pop();
+      return;
+    }
+
+    context.go(dashboardRoute);
+  }
+
   /// --- Widgets ---
 
   Widget topHeader() => Container(
     padding: const EdgeInsets.fromLTRB(16, 16, 16, 14),
     decoration: const BoxDecoration(
-      gradient: LinearGradient(begin: Alignment.topCenter, end: Alignment.bottomCenter, colors: [Color(0xCC000000), Color(0x00000000)]),
+      gradient: LinearGradient(
+        begin: Alignment.topCenter,
+        end: Alignment.bottomCenter,
+        colors: [Color(0xCC000000), Color(0x00000000)],
+      ),
     ),
     child: Column(
       children: [
         Row(
           children: [
-            IconButton(onPressed: () => context.go(dashboardRoute), icon: const Icon(Icons.close_rounded, color: Colors.white)),
-            Expanded(child: Center(child: Text('Register Tree', style: Style.body16(context, color: Colors.white, weight: FontWeight.w700))),
+            IconButton(
+              onPressed: onClosePage,
+              icon: const Icon(Icons.close_rounded, color: Colors.white),
+            ),
+            Expanded(
+              child: Center(
+                child: Text(
+                  'register_tree_title'.tr(),
+                  style: Style.body16(
+                    context,
+                    color: Colors.white,
+                    weight: FontWeight.w700,
+                  ),
+                ),
+              ),
             ),
             const SizedBox(width: 48),
           ],
@@ -151,17 +184,43 @@ class RegisterTreeCameraPageState extends State<RegisterTreeCameraPage> {
                   width: 34,
                   height: 34,
                   decoration: BoxDecoration(
-                    color: photosTaken[index] ? AppColors.primary : index == currentStep ? Colors.white.withValues(alpha: 0.24) : Colors.transparent,
+                    color: photosTaken[index]
+                        ? AppColors.primary
+                        : index == currentStep
+                        ? Colors.white.withValues(alpha: 0.24)
+                        : Colors.transparent,
                     borderRadius: BorderRadius.circular(18),
-                    border: Border.all(color: photosTaken[index] || index == currentStep ? Colors.white : Colors.white.withValues(alpha: 0.45), width: 1.5),
+                    border: Border.all(
+                      color: photosTaken[index] || index == currentStep
+                          ? Colors.white
+                          : Colors.white.withValues(alpha: 0.45),
+                      width: 1.5,
+                    ),
                   ),
                   alignment: Alignment.center,
                   child: photosTaken[index]
-                      ? const Icon(Icons.check_circle_rounded, color: Colors.white, size: 18)
-                      : Text('${index + 1}', style: Style.body12(context, color: Colors.white, weight: FontWeight.w700)),
+                      ? const Icon(
+                          Icons.check_circle_rounded,
+                          color: Colors.white,
+                          size: 18,
+                        )
+                      : Text(
+                          '${index + 1}',
+                          style: Style.body12(
+                            context,
+                            color: Colors.white,
+                            weight: FontWeight.w700,
+                          ),
+                        ),
                 ),
                 if (index < photoSteps.length - 1)
-                  Container(width: 24, height: 2, color: photosTaken[index] ? AppColors.primary : Colors.white.withValues(alpha: 0.4)),
+                  Container(
+                    width: 24,
+                    height: 2,
+                    color: photosTaken[index]
+                        ? AppColors.primary
+                        : Colors.white.withValues(alpha: 0.4),
+                  ),
               ],
             ),
           ),
@@ -172,11 +231,19 @@ class RegisterTreeCameraPageState extends State<RegisterTreeCameraPage> {
 
   Widget cameraPreviewLayer() {
     if (cameraErrorText.isNotEmpty) {
-      return Center(child: Text(cameraErrorText, style: Style.body14(context, color: Colors.white), textAlign: TextAlign.center));
+      return Center(
+        child: Text(
+          cameraErrorText,
+          style: Style.body14(context, color: Colors.white),
+          textAlign: TextAlign.center,
+        ),
+      );
     }
 
     if (!isCameraReady || cameraController == null) {
-      return const Center(child: CircularProgressIndicator(color: Colors.white));
+      return const Center(
+        child: CircularProgressIndicator(color: Colors.white),
+      );
     }
 
     return SizedBox.expand(child: CameraPreview(cameraController!));
@@ -185,14 +252,23 @@ class RegisterTreeCameraPageState extends State<RegisterTreeCameraPage> {
   Widget cameraFrameOverlay() => Center(
     child: Container(
       margin: EdgeInsets.all(12),
-      decoration: BoxDecoration(border: Border.all(color: Colors.white.withValues(alpha: 0.8), width: 3), borderRadius: Style.border24),
+      decoration: BoxDecoration(
+        border: Border.all(
+          color: Colors.white.withValues(alpha: 0.8),
+          width: 3,
+        ),
+        borderRadius: Style.border24,
+      ),
       child: Stack(
         children: [
           if (imagePathByStep(currentStep) != null)
             Positioned.fill(
               child: ClipRRect(
                 borderRadius: Style.border24,
-                child: Image.file(File(imagePathByStep(currentStep)!), fit: BoxFit.cover),
+                child: Image.file(
+                  File(imagePathByStep(currentStep)!),
+                  fit: BoxFit.cover,
+                ),
               ),
             ),
           cornerMarker(top: 0, left: 0),
@@ -216,13 +292,35 @@ class RegisterTreeCameraPageState extends State<RegisterTreeCameraPage> {
           bottom: 12,
           child: Column(
             children: [
-              Text(photoSteps[currentStep].$2, style: const TextStyle(fontSize: 34)),
+              Text(
+                photoSteps[currentStep].$2,
+                style: const TextStyle(fontSize: 34),
+              ),
               const SizedBox(height: 2),
-              Text(photoSteps[currentStep].$1, style: Style.body16(context, color: Colors.white, weight: FontWeight.w700)),
+              Text(
+                photoSteps[currentStep].$1,
+                style: Style.body16(
+                  context,
+                  color: Colors.white,
+                  weight: FontWeight.w700,
+                ),
+              ),
               const SizedBox(height: 2),
-              Text(photoSteps[currentStep].$3, style: Style.body12(context, color: Colors.white.withValues(alpha: 0.85))),
+              Text(
+                photoSteps[currentStep].$3,
+                style: Style.body12(
+                  context,
+                  color: Colors.white.withValues(alpha: 0.85),
+                ),
+              ),
               const SizedBox(height: 2),
-              Text('Position: keep the tree inside the square', style: Style.body12(context, color: Colors.white.withValues(alpha: 0.78))),
+              Text(
+                'register_tree_position_hint'.tr(),
+                style: Style.body12(
+                  context,
+                  color: Colors.white.withValues(alpha: 0.78),
+                ),
+              ),
             ],
           ),
         ),
@@ -231,7 +329,12 @@ class RegisterTreeCameraPageState extends State<RegisterTreeCameraPage> {
     ),
   );
 
-  Widget cornerMarker({double? top, double? right, double? bottom, double? left}) => Positioned(
+  Widget cornerMarker({
+    double? top,
+    double? right,
+    double? bottom,
+    double? left,
+  }) => Positioned(
     top: top,
     right: right,
     bottom: bottom,
@@ -241,10 +344,18 @@ class RegisterTreeCameraPageState extends State<RegisterTreeCameraPage> {
       height: 26,
       decoration: BoxDecoration(
         border: Border(
-          top: top != null ? const BorderSide(color: Color(0xFF48B978), width: 4) : BorderSide.none,
-          left: left != null ? const BorderSide(color: Color(0xFF48B978), width: 4) : BorderSide.none,
-          right: right != null ? const BorderSide(color: Color(0xFF48B978), width: 4) : BorderSide.none,
-          bottom: bottom != null ? const BorderSide(color: Color(0xFF48B978), width: 4) : BorderSide.none,
+          top: top != null
+              ? const BorderSide(color: Color(0xFF48B978), width: 4)
+              : BorderSide.none,
+          left: left != null
+              ? const BorderSide(color: Color(0xFF48B978), width: 4)
+              : BorderSide.none,
+          right: right != null
+              ? const BorderSide(color: Color(0xFF48B978), width: 4)
+              : BorderSide.none,
+          bottom: bottom != null
+              ? const BorderSide(color: Color(0xFF48B978), width: 4)
+              : BorderSide.none,
         ),
       ),
     ),
@@ -257,7 +368,16 @@ class RegisterTreeCameraPageState extends State<RegisterTreeCameraPage> {
         child: Column(
           children: List.generate(
             3,
-            (row) => Expanded(child: Container(decoration: BoxDecoration(border: Border.all(color: Colors.white.withValues(alpha: 0.16), width: 0.8)))),
+            (row) => Expanded(
+              child: Container(
+                decoration: BoxDecoration(
+                  border: Border.all(
+                    color: Colors.white.withValues(alpha: 0.16),
+                    width: 0.8,
+                  ),
+                ),
+              ),
+            ),
           ),
         ),
       ),
@@ -267,7 +387,11 @@ class RegisterTreeCameraPageState extends State<RegisterTreeCameraPage> {
   Widget bottomControls() => Container(
     padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
     decoration: const BoxDecoration(
-      gradient: LinearGradient(begin: Alignment.bottomCenter, end: Alignment.topCenter, colors: [Color(0xE6000000), Color(0x00000000)]),
+      gradient: LinearGradient(
+        begin: Alignment.bottomCenter,
+        end: Alignment.topCenter,
+        colors: [Color(0xE6000000), Color(0x00000000)],
+      ),
     ),
     child: Column(
       children: [
@@ -276,15 +400,29 @@ class RegisterTreeCameraPageState extends State<RegisterTreeCameraPage> {
           child: Container(
             width: 84,
             height: 84,
-            decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              shape: BoxShape.circle,
+            ),
             alignment: Alignment.center,
             child: isCapturing
-                ? const SizedBox(width: 32, height: 32, child: CircularProgressIndicator(strokeWidth: 3))
+                ? const SizedBox(
+                    width: 32,
+                    height: 32,
+                    child: CircularProgressIndicator(strokeWidth: 3),
+                  )
                 : Container(
                     width: 64,
                     height: 64,
-                    decoration: BoxDecoration(shape: BoxShape.circle, border: Border.all(color: AppColors.primary, width: 4)),
-                    child: const Icon(Icons.camera_alt_rounded, color: AppColors.primary, size: 30),
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(color: AppColors.primary, width: 4),
+                    ),
+                    child: const Icon(
+                      Icons.camera_alt_rounded,
+                      color: AppColors.primary,
+                      size: 30,
+                    ),
                   ),
           ),
         ),
@@ -296,10 +434,19 @@ class RegisterTreeCameraPageState extends State<RegisterTreeCameraPage> {
             (index) => Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
               decoration: BoxDecoration(
-                color: photosTaken[index] ? AppColors.primary : Colors.white.withValues(alpha: 0.2),
+                color: photosTaken[index]
+                    ? AppColors.primary
+                    : Colors.white.withValues(alpha: 0.2),
                 borderRadius: Style.border20,
               ),
-              child: Text(photoSteps[index].$1, style: Style.body12(context, color: Colors.white, weight: FontWeight.w600)),
+              child: Text(
+                photoSteps[index].$1,
+                style: Style.body12(
+                  context,
+                  color: Colors.white,
+                  weight: FontWeight.w600,
+                ),
+              ),
             ),
           ),
         ),
@@ -311,9 +458,7 @@ class RegisterTreeCameraPageState extends State<RegisterTreeCameraPage> {
   Widget build(BuildContext context) => Scaffold(
     backgroundColor: Colors.black,
     body: SafeArea(
-      child: Column(
-        children: [topHeader(), cameraFrame(), bottomControls()],
-      ),
+      child: Column(children: [topHeader(), cameraFrame(), bottomControls()]),
     ),
   );
 }

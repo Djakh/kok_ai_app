@@ -14,7 +14,8 @@ class PageIndicator extends StatelessWidget {
     BorderRadius? borderRadius,
     this.isExpanded = false,
     this.isFilledIndicators = true,
-  }) : borderRadius = borderRadius ?? const BorderRadius.all(Radius.circular(12));
+  }) : borderRadius =
+           borderRadius ?? const BorderRadius.all(Radius.circular(12));
 
   final int currentIndex;
   final int total;
@@ -28,7 +29,9 @@ class PageIndicator extends StatelessWidget {
   final bool isFilledIndicators;
 
   Color colorFor(int index, BuildContext context) {
-    if (isFilledIndicators && index < currentIndex) return activeColor ?? context.cs.primary;
+    if (isFilledIndicators && index < currentIndex) {
+      return activeColor ?? context.cs.primary;
+    }
     if (index == currentIndex) return activeColor ?? context.cs.primary;
     return inactiveColor ?? context.cs.primary.withValues(alpha: 0.3);
   }
@@ -40,12 +43,17 @@ class PageIndicator extends StatelessWidget {
       margin: EdgeInsets.only(right: index == total - 1 ? 0 : spacing),
       height: itemHeight,
       width: itemWidth,
-      decoration: BoxDecoration(color: colorFor(index, context), borderRadius: borderRadius),
+      decoration: BoxDecoration(
+        color: colorFor(index, context),
+        borderRadius: borderRadius,
+      ),
     ),
   );
 
   Widget checkIsExpandedIndicator(int index) {
-    return isExpanded ? Expanded(child: itemAnimatedContainer(index)) : itemAnimatedContainer(index);
+    return isExpanded
+        ? Expanded(child: itemAnimatedContainer(index))
+        : itemAnimatedContainer(index);
   }
 
   @override

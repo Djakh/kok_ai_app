@@ -7,7 +7,10 @@ class AppNavBloc extends Bloc<AppNavEvent, AppNavState> {
     on<AppNavIndexChanged>(onAppNavIndexChanged);
   }
 
-  Future<void> onAppNavIndexChanged(AppNavIndexChanged event, Emitter<AppNavState> emit) async {
+  Future<void> onAppNavIndexChanged(
+    AppNavIndexChanged event,
+    Emitter<AppNavState> emit,
+  ) async {
     emit(state.copyWith(index: event.index));
   }
 }

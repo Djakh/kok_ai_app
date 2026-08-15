@@ -26,14 +26,20 @@ class TreeMarkerIcon extends StatelessWidget {
       Container(
         width: 18,
         height: 14,
-        decoration: BoxDecoration(color: markerColor, borderRadius: BorderRadius.circular(8)),
+        decoration: BoxDecoration(
+          color: markerColor,
+          borderRadius: BorderRadius.circular(8),
+        ),
       ),
       Positioned(
         bottom: 0,
         child: Container(
           width: 5,
           height: 10,
-          decoration: BoxDecoration(color: const Color(0xFF8B4513), borderRadius: BorderRadius.circular(2)),
+          decoration: BoxDecoration(
+            color: const Color(0xFF8B4513),
+            borderRadius: BorderRadius.circular(2),
+          ),
         ),
       ),
     ],

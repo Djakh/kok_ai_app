@@ -4,6 +4,9 @@ import 'package:go_router/go_router.dart';
 import 'package:kok_ai_app/assets/themes/app_colors.dart';
 import 'package:kok_ai_app/assets/themes/style.dart';
 import 'package:kok_ai_app/features/common/presentation/widgets/kok_card.dart';
+import 'package:kok_ai_app/features/profile/data/models/supported_language.dart';
+import 'package:kok_ai_app/features/profile/data/services/profile_api_service.dart';
+import 'package:kok_ai_app/injection_container.dart';
 
 class ProfileLocalizationPage extends StatefulWidget {
   const ProfileLocalizationPage({super.key});
@@ -14,16 +17,40 @@ class ProfileLocalizationPage extends StatefulWidget {
 }
 
 class ProfileLocalizationPageState extends State<ProfileLocalizationPage> {
-  final localeItems = const [
-    (Locale('en'), 'English', 'English'),
-    (Locale('ru'), 'Русский', 'Russian'),
-    (Locale('uz'), 'O‘zbek', 'Uzbek'),
+  final profileApiService = sl<ProfileApiService>();
+
+  List<SupportedLanguage> languages = const [
+    SupportedLanguage(code: 'en', name: 'English'),
+    SupportedLanguage(code: 'ru', name: 'Русский'),
+    SupportedLanguage(code: 'uz', name: 'O‘zbek'),
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    loadSupportedLanguages();
+  }
 
   /// --- Methods ---
 
+  Future<void> loadSupportedLanguages() async {
+    try {
+      final remote = await profileApiService.getSupportedLanguages();
+      final supported = remote
+          .where((item) => const {'en', 'ru', 'uz'}.contains(item.code))
+          .toList();
+      if (!mounted || supported.isEmpty) return;
+      setState(() => languages = supported);
+    } catch (_) {
+      // The three contract languages remain available while offline.
+    }
+  }
+
   Future<void> onSelectLocale(Locale locale) async {
     await context.setLocale(locale);
+    try {
+      await profileApiService.updateLocalization(locale.languageCode);
+    } catch (_) {}
     if (!mounted) return;
     setState(() {});
   }
@@ -38,16 +65,22 @@ class ProfileLocalizationPageState extends State<ProfileLocalizationPage> {
           onPressed: () => context.pop(),
           icon: const Icon(Icons.arrow_back_rounded),
         ),
-        Expanded(child: Text('Localization', style: Style.title20(context))),
+        Expanded(
+          child: Text(
+            'settings_localization'.tr(),
+            style: Style.title20(context),
+          ),
+        ),
       ],
     ),
   );
 
-  Widget localeCard(BuildContext context, (Locale, String, String) localeItem) {
-    final selected = context.locale.languageCode == localeItem.$1.languageCode;
+  Widget localeCard(BuildContext context, SupportedLanguage language) {
+    final locale = Locale(language.code);
+    final selected = context.locale.languageCode == language.code;
 
     return GestureDetector(
-      onTap: () => onSelectLocale(localeItem.$1),
+      onTap: () => onSelectLocale(locale),
       child: KokCard(
         color: selected ? const Color(0x1A4CAF6D) : Colors.white,
         child: Row(
@@ -74,11 +107,11 @@ class ProfileLocalizationPageState extends State<ProfileLocalizationPage> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    localeItem.$2,
+                    language.name,
                     style: Style.body16(context, weight: FontWeight.w700),
                   ),
                   Text(
-                    localeItem.$3,
+                    language.code.toUpperCase(),
                     style: Style.body12(context, color: AppColors.gray717171),
                   ),
                 ],
@@ -107,9 +140,9 @@ class ProfileLocalizationPageState extends State<ProfileLocalizationPage> {
             child: ListView.separated(
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
               itemBuilder: (context, index) =>
-                  localeCard(context, localeItems[index]),
+                  localeCard(context, languages[index]),
               separatorBuilder: (context, index) => const SizedBox(height: 10),
-              itemCount: localeItems.length,
+              itemCount: languages.length,
             ),
           ),
         ],

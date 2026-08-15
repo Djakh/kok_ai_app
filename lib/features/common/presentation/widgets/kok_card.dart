@@ -25,7 +25,12 @@ class KokCard extends StatelessWidget {
       color: color ?? Colors.white,
       borderRadius: borderRadius ?? Style.border20,
       boxShadow: const [
-        BoxShadow(color: Color(0x14000000), blurRadius: 12, offset: Offset(0, 6), spreadRadius: 0),
+        BoxShadow(
+          color: Color(0x14000000),
+          blurRadius: 12,
+          offset: Offset(0, 6),
+          spreadRadius: 0,
+        ),
       ],
     ),
     child: child,

@@ -15,7 +15,12 @@ class PrimaryBackground extends StatelessWidget {
       color: Theme.of(context).colorScheme.surface,
       borderRadius: Style.border24,
       boxShadow: const [
-        BoxShadow(color: Color(0x1A000000), blurRadius: 16, offset: Offset(0, 8), spreadRadius: 1),
+        BoxShadow(
+          color: Color(0x1A000000),
+          blurRadius: 16,
+          offset: Offset(0, 8),
+          spreadRadius: 1,
+        ),
       ],
     ),
     child: child,

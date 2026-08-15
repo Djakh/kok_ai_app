@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
 
 class KokGradientBackground extends StatelessWidget {
-  const KokGradientBackground({super.key, required this.colors, required this.child});
+  const KokGradientBackground({
+    super.key,
+    required this.colors,
+    required this.child,
+  });
 
   final List<Color> colors;
   final Widget child;
